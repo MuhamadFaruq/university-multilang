@@ -33,6 +33,7 @@ class Application
         // Define all service providers here
         $providerClasses = [
             \UniversityMultilang\Admin\AdminServiceProvider::class,
+            \UniversityMultilang\Language\LanguageServiceProvider::class,
         ];
 
         foreach ($providerClasses as $class) {
