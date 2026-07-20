@@ -38,6 +38,7 @@ class Application
             \UniversityMultilang\Router\RouterServiceProvider::class,
             \UniversityMultilang\Frontend\FrontendServiceProvider::class,
             \UniversityMultilang\Seo\SeoServiceProvider::class,
+            \UniversityMultilang\Elementor\ElementorServiceProvider::class,
         ];
 
         foreach ($providerClasses as $class) {
