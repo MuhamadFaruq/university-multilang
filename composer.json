@@ -1,0 +1,20 @@
+{
+    "name": "faruq/university-multilang",
+    "description": "Multilingual plugin for WordPress",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "autoload": {
+        "psr-4": {
+            "UniversityMultilang\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Faruq"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "psr/container": "^2.0"
+    }
+}
