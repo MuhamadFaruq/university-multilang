@@ -53,7 +53,21 @@ class TranslationManager
     {
         $groupId = $this->getTranslationGroupId($sourcePostId);
         update_post_meta($translatedPostId, self::META_GROUP_ID, $groupId);
+        
+        // Invalidate cache for all posts in this group
+        global $wpdb;
+        $postIds = $wpdb->get_col($wpdb->prepare(
+            "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value = %s",
+            self::META_GROUP_ID,
+            $groupId
+        ));
+        
+        foreach ($postIds as $id) {
+            wp_cache_delete('uml_translations_' . $id, self::CACHE_GROUP);
+        }
     }
+
+    public const CACHE_GROUP = 'uml_translation_cache';
 
     /**
      * Get all translations of a given post, including itself.
@@ -61,12 +75,20 @@ class TranslationManager
      */
     public function getTranslations(int $postId): array
     {
+        $cacheKey = 'uml_translations_' . $postId;
+        $cached = wp_cache_get($cacheKey, self::CACHE_GROUP);
+        if (false !== $cached) {
+            return $cached;
+        }
+
         $groupId = get_post_meta($postId, self::META_GROUP_ID, true);
         if (empty($groupId)) {
             // Post has no translation group yet, so it only has itself.
             $lang = $this->getPostLanguage($postId);
             if ($lang) {
-                return [$lang => $postId];
+                $result = [$lang => $postId];
+                wp_cache_set($cacheKey, $result, self::CACHE_GROUP);
+                return $result;
             }
             return [];
         }
@@ -85,6 +107,8 @@ class TranslationManager
                 $translations[$lang] = (int) $id;
             }
         }
+
+        wp_cache_set($cacheKey, $translations, self::CACHE_GROUP);
 
         return $translations;
     }

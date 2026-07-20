@@ -8,6 +8,9 @@ class LanguageManager
 {
     public const TAXONOMY = 'language';
 
+    public const CACHE_GROUP = 'uml_language_cache';
+    public const CACHE_KEY_ALL_LANGS = 'uml_all_languages';
+
     /**
      * Get all registered languages.
      * 
@@ -15,12 +18,20 @@ class LanguageManager
      */
     public function getLanguages(): array
     {
-        $terms = get_terms([
-            'taxonomy'   => self::TAXONOMY,
-            'hide_empty' => false,
-        ]);
+        $languages = wp_cache_get(self::CACHE_KEY_ALL_LANGS, self::CACHE_GROUP);
+        if (false === $languages) {
+            $languages = get_terms([
+                'taxonomy'   => self::TAXONOMY,
+                'hide_empty' => false,
+            ]);
+            
+            if (is_wp_error($languages)) {
+                $languages = [];
+            }
+            wp_cache_set(self::CACHE_KEY_ALL_LANGS, $languages, self::CACHE_GROUP);
+        }
 
-        return is_array($terms) ? $terms : [];
+        return $languages;
     }
 
     /**
@@ -37,9 +48,14 @@ class LanguageManager
             'slug' => $slug,
         ]);
 
-        if (!is_wp_error($result) && !empty($locale)) {
-            $termId = (int) $result['term_id'];
-            update_term_meta($termId, 'locale', $locale);
+        if (!is_wp_error($result)) {
+            if (!empty($locale)) {
+                $termId = (int) $result['term_id'];
+                update_term_meta($termId, 'locale', $locale);
+            }
+            
+            // Invalidate cache
+            wp_cache_delete(self::CACHE_KEY_ALL_LANGS, self::CACHE_GROUP);
         }
 
         return $result;
