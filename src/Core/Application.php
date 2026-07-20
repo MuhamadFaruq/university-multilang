@@ -34,6 +34,7 @@ class Application
         $providerClasses = [
             \UniversityMultilang\Admin\AdminServiceProvider::class,
             \UniversityMultilang\Language\LanguageServiceProvider::class,
+            \UniversityMultilang\Translation\TranslationServiceProvider::class,
         ];
 
         foreach ($providerClasses as $class) {
