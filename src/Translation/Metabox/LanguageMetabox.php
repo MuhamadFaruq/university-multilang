@@ -56,19 +56,30 @@ class LanguageMetabox
         echo '</select>';
 
         // Translation connections info
+        echo '<hr />';
+        echo '<p><strong>Translations:</strong></p>';
+        echo '<ul>';
+
         $translations = $this->translationManager->getTranslations($post->ID);
-        if (!empty($translations) && count($translations) > 1) {
-            echo '<hr />';
-            echo '<p><strong>Translations:</strong></p>';
-            echo '<ul>';
-            foreach ($translations as $slug => $translatedPostId) {
-                if ($translatedPostId !== $post->ID) {
-                    $editLink = get_edit_post_link($translatedPostId);
-                    echo '<li>' . esc_html(strtoupper($slug)) . ': <a href="' . esc_url($editLink) . '">Edit</a></li>';
-                }
+
+        foreach ($languages as $lang) {
+            // Skip the language of the current post
+            if ($lang->slug === $currentLanguage) {
+                continue;
             }
-            echo '</ul>';
+
+            if (isset($translations[$lang->slug])) {
+                $translatedPostId = $translations[$lang->slug];
+                $editLink = get_edit_post_link($translatedPostId);
+                echo '<li>' . esc_html($lang->name) . ': <a href="' . esc_url($editLink) . '">Edit</a></li>';
+            } else {
+                // Determine post type and create 'add new' link
+                $postTypeObj = get_post_type_object($post->post_type);
+                $newPostLink = admin_url('post-new.php?post_type=' . $post->post_type . '&from_post=' . $post->ID . '&new_lang=' . $lang->slug);
+                echo '<li>' . esc_html($lang->name) . ': <a href="' . esc_url($newPostLink) . '" style="color: green;">+ Add</a></li>';
+            }
         }
+        echo '</ul>';
     }
 
     public function savePostData(int $postId): void

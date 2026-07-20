@@ -35,6 +35,7 @@ class Application
             \UniversityMultilang\Admin\AdminServiceProvider::class,
             \UniversityMultilang\Language\LanguageServiceProvider::class,
             \UniversityMultilang\Translation\TranslationServiceProvider::class,
+            \UniversityMultilang\Router\RouterServiceProvider::class,
         ];
 
         foreach ($providerClasses as $class) {

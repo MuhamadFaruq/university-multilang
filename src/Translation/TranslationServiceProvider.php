@@ -25,8 +25,16 @@ class TranslationServiceProvider extends ServiceProvider
             );
         });
 
+        // Bind TranslationController
+        $this->container->bind(TranslationController::class, function ($container) {
+            return new TranslationController($container->get(TranslationManager::class));
+        });
+
         // Register hooks for Metabox
         $this->hooks->addAction('add_meta_boxes', $this->container->get(LanguageMetabox::class), 'registerMetabox');
         $this->hooks->addAction('save_post', $this->container->get(LanguageMetabox::class), 'savePostData');
+
+        // Register hooks for linking new translations
+        $this->hooks->addAction('wp_insert_post', $this->container->get(TranslationController::class), 'linkNewTranslation', 10, 3);
     }
 }
