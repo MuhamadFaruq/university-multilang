@@ -28,12 +28,28 @@ class LanguageManager
      * 
      * @param string $name The language name (e.g., 'Indonesian')
      * @param string $slug The language slug (e.g., 'id')
+     * @param string $locale The locale string (e.g., 'id_ID')
      * @return array|\WP_Error
      */
-    public function addLanguage(string $name, string $slug)
+    public function addLanguage(string $name, string $slug, string $locale = '')
     {
-        return wp_insert_term($name, self::TAXONOMY, [
+        $result = wp_insert_term($name, self::TAXONOMY, [
             'slug' => $slug,
         ]);
+
+        if (!is_wp_error($result) && !empty($locale)) {
+            $termId = (int) $result['term_id'];
+            update_term_meta($termId, 'locale', $locale);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get the locale of a language term.
+     */
+    public function getLocale(int $termId): string
+    {
+        return (string) get_term_meta($termId, 'locale', true);
     }
 }

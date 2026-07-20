@@ -29,6 +29,9 @@ class LanguageServiceProvider extends ServiceProvider
 
         // Register custom taxonomy hook
         $this->hooks->addAction('init', $this, 'registerTaxonomy');
+        
+        // Hook form processing
+        $this->hooks->addAction('admin_init', $this->container->get(LanguageController::class), 'handleFormSubmission');
     }
 
     public function registerTaxonomy(): void
