@@ -28,10 +28,20 @@ class FrontendServiceProvider extends ServiceProvider
             );
         });
 
+        // Bind GeoRedirect
+        $this->container->bind(GeoRedirect::class, function ($container) {
+            return new GeoRedirect(
+                $container->get(LanguageManager::class)
+            );
+        });
+
         // Register Shortcode
         add_shortcode('uml_language_switcher', [$this->container->get(LanguageSwitcher::class), 'shortcodeCallback']);
         
         // Register Query Filter
         $this->hooks->addAction('pre_get_posts', $this->container->get(QueryFilter::class), 'filterMainQuery');
+        
+        // Register GeoRedirect Scripts
+        $this->hooks->addAction('wp_enqueue_scripts', $this->container->get(GeoRedirect::class), 'enqueueScripts');
     }
 }
