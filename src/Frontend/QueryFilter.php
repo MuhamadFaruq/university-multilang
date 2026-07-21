@@ -37,45 +37,24 @@ class QueryFilter
 
         $currentLang = $this->requestProcessor->getCurrentLanguage();
         
-        // If there's no language prefix in the URL, fallback to the default language (first registered language)
-        $isDefaultLanguage = false;
+        // If there's no language prefix in the URL, use the default language
         if (empty($currentLang)) {
             $languages = $this->languageManager->getLanguages();
-            
             if (!empty($languages)) {
-                $currentLang = $languages[0]->slug;
-                $isDefaultLanguage = true;
-            } else {
-                return; // No languages registered at all, don't filter.
+                $currentLang = reset($languages)->slug;
             }
         }
         
-        $taxQuery = $query->get('tax_query') ?: [];
-        
-        if ($isDefaultLanguage) {
-            // For the default language view (e.g. root URL /), 
-            // show posts explicitly tagged with the default language OR posts that have NO language (legacy posts).
-            $taxQuery[] = [
-                'relation' => 'OR',
-                [
-                    'taxonomy' => LanguageManager::TAXONOMY,
-                    'field'    => 'slug',
-                    'terms'    => $currentLang,
-                ],
-                [
-                    'taxonomy' => LanguageManager::TAXONOMY,
-                    'operator' => 'NOT EXISTS',
-                ]
-            ];
-        } else {
-            // For secondary languages (e.g. /en/), STRICTLY show only posts tagged with that exact language.
+        if (!empty($currentLang)) {
+            $taxQuery = $query->get('tax_query') ?: [];
+            
             $taxQuery[] = [
                 'taxonomy' => LanguageManager::TAXONOMY,
                 'field'    => 'slug',
                 'terms'    => $currentLang,
             ];
-        }
 
-        $query->set('tax_query', $taxQuery);
+            $query->set('tax_query', $taxQuery);
+        }
     }
 }
