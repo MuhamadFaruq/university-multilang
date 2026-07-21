@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace UniversityMultilang\Navigation\Menus;
 
-use UniversityMultilang\Admin\MenuInterface;
+use UniversityMultilang\Admin\Contracts\MenuInterface;
 use UniversityMultilang\Navigation\NavigationManager;
 use UniversityMultilang\Language\LanguageManager;
 
