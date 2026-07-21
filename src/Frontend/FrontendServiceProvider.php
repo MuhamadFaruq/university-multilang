@@ -20,7 +20,17 @@ class FrontendServiceProvider extends ServiceProvider
             );
         });
 
+        // Bind QueryFilter
+        $this->container->bind(QueryFilter::class, function ($container) {
+            return new QueryFilter(
+                $container->get(\UniversityMultilang\Router\RequestProcessor::class)
+            );
+        });
+
         // Register Shortcode
         add_shortcode('uml_language_switcher', [$this->container->get(LanguageSwitcher::class), 'shortcodeCallback']);
+        
+        // Register Query Filter
+        $this->hooks->addAction('pre_get_posts', $this->container->get(QueryFilter::class), 'filterMainQuery');
     }
 }
