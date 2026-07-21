@@ -39,6 +39,7 @@ class Application
             \UniversityMultilang\Frontend\FrontendServiceProvider::class,
             \UniversityMultilang\Seo\SeoServiceProvider::class,
             \UniversityMultilang\Elementor\ElementorServiceProvider::class,
+            \UniversityMultilang\Navigation\NavigationServiceProvider::class,
         ];
 
         foreach ($providerClasses as $class) {
