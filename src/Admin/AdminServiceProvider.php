@@ -25,6 +25,19 @@ class AdminServiceProvider extends ServiceProvider
         $this->container->bind(MainMenu::class, function ($container) {
             return new MainMenu($container->get(AdminController::class));
         });
+
+        // Bind BulkSync components
+        $this->container->bind(\UniversityMultilang\Admin\BulkSyncController::class, function ($container) {
+            return new \UniversityMultilang\Admin\BulkSyncController(
+                $container->get(\UniversityMultilang\Translation\TranslationController::class),
+                $container->get(\UniversityMultilang\Translation\TranslationManager::class),
+                $container->get(\UniversityMultilang\Language\LanguageManager::class)
+            );
+        });
+
+        $this->container->bind(\UniversityMultilang\Admin\Menus\BulkSyncMenu::class, function () {
+            return new \UniversityMultilang\Admin\Menus\BulkSyncMenu();
+        });
     }
 
     public function boot(): void
@@ -32,10 +45,16 @@ class AdminServiceProvider extends ServiceProvider
         /** @var MenuManager $menuManager */
         $menuManager = $this->container->get(MenuManager::class);
 
-        // Add our Main Menu
+        // Add our Menus
         $menuManager->addMenu($this->container->get(MainMenu::class));
+        $menuManager->addMenu($this->container->get(\UniversityMultilang\Admin\Menus\BulkSyncMenu::class));
 
         // Let MenuManager register all its menus into HookManager
         $menuManager->registerToWordPress($this->hooks);
+
+        // Register BulkSync AJAX hooks
+        $bulkSyncController = $this->container->get(\UniversityMultilang\Admin\BulkSyncController::class);
+        $this->hooks->addAction('wp_ajax_uml_bulk_sync_init', $bulkSyncController, 'handleInitAjax');
+        $this->hooks->addAction('wp_ajax_uml_bulk_sync_process', $bulkSyncController, 'handleProcessAjax');
     }
 }
