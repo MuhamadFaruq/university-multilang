@@ -35,21 +35,6 @@ class LanguageManager
     }
 
     /**
-     * Get the default language slug.
-     * We assume the first registered language is the default.
-     * 
-     * @return string|null
-     */
-    public function getDefaultLanguageSlug(): ?string
-    {
-        $languages = $this->getLanguages();
-        if (!empty($languages)) {
-            return $languages[0]->slug;
-        }
-        return null;
-    }
-
-    /**
      * Register a new language.
      * 
      * @param string $name The language name (e.g., 'Indonesian')
