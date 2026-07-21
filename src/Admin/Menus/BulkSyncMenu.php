@@ -13,6 +13,21 @@ class BulkSyncMenu implements MenuInterface
         return 'uml-bulk-sync';
     }
 
+    public function getPageTitle(): string
+    {
+        return 'Bulk Sync Translation';
+    }
+
+    public function getMenuTitle(): string
+    {
+        return 'Bulk Sync';
+    }
+
+    public function getCapability(): string
+    {
+        return 'manage_options';
+    }
+
     public function getIcon(): string
     {
         return 'dashicons-update-alt';
