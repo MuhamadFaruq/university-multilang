@@ -13,6 +13,11 @@ class BulkSyncMenu implements MenuInterface
         return 'uml-bulk-sync';
     }
 
+    public function getParentSlug(): ?string
+    {
+        return 'university-multilang';
+    }
+
     public function getPageTitle(): string
     {
         return 'Bulk Sync Translation';
