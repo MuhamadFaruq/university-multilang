@@ -10,11 +10,16 @@ class TranslationController
 {
     private TranslationManager $translationManager;
     private LanguageManager $languageManager;
+    private MachineTranslator $machineTranslator;
 
-    public function __construct(TranslationManager $translationManager, LanguageManager $languageManager)
-    {
+    public function __construct(
+        TranslationManager $translationManager,
+        LanguageManager $languageManager,
+        MachineTranslator $machineTranslator
+    ) {
         $this->translationManager = $translationManager;
         $this->languageManager = $languageManager;
+        $this->machineTranslator = $machineTranslator;
     }
 
     /**
@@ -86,9 +91,18 @@ class TranslationController
             
             // If the post doesn't exist in this language yet, duplicate it as draft
             if (!isset($translations[$langSlug])) {
+                // Perform translation
+                $translatedTitle = $this->machineTranslator->translate($post->post_title, $sourceLang, $langSlug);
+                $translatedContent = $this->machineTranslator->translate($post->post_content, $sourceLang, $langSlug);
+                
+                // If it fails, fallback to [LANG] prefix
+                if ($translatedTitle === $post->post_title) {
+                    $translatedTitle = $post->post_title . ' [' . strtoupper($langSlug) . ']';
+                }
+
                 $newPostData = [
-                    'post_title'   => $post->post_title . ' [' . strtoupper($langSlug) . ']',
-                    'post_content' => $post->post_content,
+                    'post_title'   => $translatedTitle,
+                    'post_content' => $translatedContent,
                     'post_status'  => 'draft', // SEO SAFETY: Keep it draft
                     'post_type'    => $post->post_type,
                     'post_author'  => $post->post_author,

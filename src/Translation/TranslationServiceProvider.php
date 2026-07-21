@@ -25,11 +25,17 @@ class TranslationServiceProvider extends ServiceProvider
             );
         });
 
+        // Bind MachineTranslator
+        $this->container->bind(MachineTranslator::class, function () {
+            return new MachineTranslator();
+        });
+
         // Bind TranslationController
         $this->container->bind(TranslationController::class, function ($container) {
             return new TranslationController(
                 $container->get(TranslationManager::class),
-                $container->get(LanguageManager::class)
+                $container->get(LanguageManager::class),
+                $container->get(MachineTranslator::class)
             );
         });
 
