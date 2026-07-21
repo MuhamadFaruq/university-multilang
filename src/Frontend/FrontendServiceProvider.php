@@ -16,7 +16,8 @@ class FrontendServiceProvider extends ServiceProvider
         $this->container->bind(LanguageSwitcher::class, function ($container) {
             return new LanguageSwitcher(
                 $container->get(LanguageManager::class),
-                $container->get(TranslationManager::class)
+                $container->get(TranslationManager::class),
+                $container->get(\UniversityMultilang\Router\RequestProcessor::class)
             );
         });
 
