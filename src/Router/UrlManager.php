@@ -53,11 +53,27 @@ class UrlManager
         return $url;
     }
 
-    public function filterPostLink(string $permalink, \WP_Post $post, bool $leavename): string
+    /**
+     * Filter post or page link.
+     * 
+     * @param string $permalink
+     * @param \WP_Post|int $post
+     * @param bool $leavenameOrSample
+     */
+    public function filterPostLink(string $permalink, $post, bool $leavenameOrSample = false): string
     {
-        $lang = $this->translationManager->getPostLanguage($post->ID);
-        if ($lang) {
-            return $this->addLanguagePrefix($permalink, $lang);
+        $postId = 0;
+        if ($post instanceof \WP_Post) {
+            $postId = $post->ID;
+        } elseif (is_numeric($post)) {
+            $postId = (int) $post;
+        }
+
+        if ($postId > 0) {
+            $lang = $this->translationManager->getPostLanguage($postId);
+            if ($lang) {
+                return $this->addLanguagePrefix($permalink, $lang);
+            }
         }
         return $permalink;
     }
