@@ -9,13 +9,23 @@
         var processedPosts = 0;
         var batchSize = 5;
 
+        var $modal = $('#uml-confirm-modal');
+        var $btnCancel = $('#uml-modal-cancel');
+        var $btnConfirm = $('#uml-modal-confirm');
+
         $btn.on('click', function(e) {
             e.preventDefault();
-            
-            if (!confirm('Are you sure you want to start the bulk sync? This may take some time depending on your content size.')) {
-                return;
-            }
+            // Show custom modal
+            $modal.addClass('uml-show');
+        });
 
+        $btnCancel.on('click', function() {
+            $modal.removeClass('uml-show');
+        });
+
+        $btnConfirm.on('click', function() {
+            $modal.removeClass('uml-show');
+            
             $btn.prop('disabled', true);
             $container.show();
             $status.text('Counting posts to sync...');
