@@ -48,7 +48,7 @@ class BulkSyncMenu implements MenuInterface
         // Enqueue JS
         wp_enqueue_script(
             'uml-bulk-sync-js',
-            plugin_dir_url(__FILE__) . '../../../../assets/js/bulk-sync.js',
+            plugin_dir_url(__FILE__) . '../../../assets/js/bulk-sync.js',
             ['jquery'],
             '1.0.0',
             true
