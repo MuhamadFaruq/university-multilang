@@ -20,6 +20,11 @@ class LanguageController
             return;
         }
 
+        if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'delete_language' && isset($_GET['term_id'])) {
+            $this->handleDeleteLanguage();
+            return;
+        }
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['action']) || $_POST['action'] !== 'add_language') {
             return;
         }
@@ -51,6 +56,20 @@ class LanguageController
         exit;
     }
 
+    private function handleDeleteLanguage(): void
+    {
+        if (!isset($_GET['uml_delete_nonce']) || !wp_verify_nonce($_GET['uml_delete_nonce'], 'uml_delete_language')) {
+            wp_die('Security check failed.');
+        }
+
+        $termId = (int) $_GET['term_id'];
+        $this->languageManager->removeLanguage($termId);
+        
+        $redirectUrl = add_query_arg(['page' => 'university-multilang-languages', 'success_delete' => '1'], admin_url('admin.php'));
+        wp_safe_redirect($redirectUrl);
+        exit;
+    }
+
     public function renderPage(): void
     {
         $languages = $this->languageManager->getLanguages();
@@ -62,6 +81,8 @@ class LanguageController
         // Display notices
         if (isset($_GET['success'])) {
             echo '<div class="notice notice-success is-dismissible"><p>Language added successfully.</p></div>';
+        } elseif (isset($_GET['success_delete'])) {
+            echo '<div class="notice notice-success is-dismissible"><p>Language deleted successfully.</p></div>';
         } elseif (isset($_GET['error'])) {
             $errorMsg = $_GET['error'] === 'empty_fields' ? 'Name and Slug are required.' : 'Failed to add language. Slug might already exist.';
             echo '<div class="notice notice-error is-dismissible"><p>' . esc_html($errorMsg) . '</p></div>';
@@ -72,7 +93,7 @@ class LanguageController
         // Right column: Table
         echo '<div id="col-right"><div class="col-wrap">';
         echo '<table class="wp-list-table widefat fixed striped">';
-        echo '<thead><tr><th>Name</th><th>Slug</th><th>Locale</th><th>Count</th></tr></thead>';
+        echo '<thead><tr><th>Name</th><th>Slug</th><th>Locale</th><th>Count</th><th>Action</th></tr></thead>';
         echo '<tbody>';
         
         if (empty($languages)) {
@@ -81,11 +102,15 @@ class LanguageController
             foreach ($languages as $language) {
                 $termId = (int) $language->term_id;
                 $locale = $this->languageManager->getLocale($termId);
+                
+                $deleteUrl = wp_nonce_url(admin_url('admin.php?page=university-multilang-languages&action=delete_language&term_id=' . $termId), 'uml_delete_language', 'uml_delete_nonce');
+                
                 echo '<tr>';
                 echo '<td><strong>' . esc_html($language->name) . '</strong></td>';
                 echo '<td>' . esc_html($language->slug) . '</td>';
                 echo '<td>' . esc_html($locale ?: '-') . '</td>';
                 echo '<td>' . intval($language->count) . '</td>';
+                echo '<td><a href="' . esc_url($deleteUrl) . '" onclick="return confirm(\'Are you sure you want to delete this language?\');" style="color: #d63638;">Delete</a></td>';
                 echo '</tr>';
             }
         }

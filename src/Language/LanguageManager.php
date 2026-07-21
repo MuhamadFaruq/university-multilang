@@ -70,4 +70,21 @@ class LanguageManager
     {
         return (string) get_term_meta($termId, 'locale', true);
     }
+
+    /**
+     * Delete a language term.
+     * 
+     * @param int $termId The ID of the term to delete.
+     * @return bool|\WP_Error
+     */
+    public function removeLanguage(int $termId)
+    {
+        $result = wp_delete_term($termId, self::TAXONOMY);
+        
+        if (!is_wp_error($result) && $result !== false) {
+            wp_cache_delete(self::CACHE_KEY_ALL_LANGS, self::CACHE_GROUP);
+        }
+        
+        return $result;
+    }
 }
