@@ -39,6 +39,6 @@ class TranslationServiceProvider extends ServiceProvider
 
         // Register hooks for linking new translations
         $this->hooks->addAction('wp_insert_post', $this->container->get(TranslationController::class), 'linkNewTranslation', 10, 3);
-        $this->hooks->addAction('transition_post_status', $this->container->get(TranslationController::class), 'autoDuplicateTranslations', 10, 3);
+        $this->hooks->addAction('save_post', $this->container->get(TranslationController::class), 'autoDuplicateTranslations', 20, 3);
     }
 }

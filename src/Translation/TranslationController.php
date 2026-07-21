@@ -43,14 +43,16 @@ class TranslationController
         $this->translationManager->linkTranslations($fromPostId, $postId);
     }
 
+    private static bool $isAutoDuplicating = false;
+
     /**
-     * Hooked to 'transition_post_status'.
+     * Hooked to 'save_post'.
      * Automatically duplicate published posts to other languages as drafts.
      */
-    public function autoDuplicateTranslations(string $newStatus, string $oldStatus, \WP_Post $post): void
+    public function autoDuplicateTranslations(int $postId, \WP_Post $post, bool $update): void
     {
-        // We only want to duplicate when a post is FIRST published
-        if ($newStatus !== 'publish' || $oldStatus === 'publish') {
+        // Only duplicate if it's published
+        if ($post->post_status !== 'publish') {
             return;
         }
 
@@ -59,8 +61,13 @@ class TranslationController
             return;
         }
 
-        // Prevent infinite loops if we are programmatically inserting a published post
-        if (did_action('uml_is_auto_duplicating')) {
+        // Ignore autosaves
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        // Prevent infinite loops if we are programmatically inserting a post
+        if (self::$isAutoDuplicating) {
             return;
         }
 
@@ -72,7 +79,7 @@ class TranslationController
         $allLangs = $this->languageManager->getLanguages();
         $translations = $this->translationManager->getTranslations($post->ID);
 
-        do_action('uml_is_auto_duplicating');
+        self::$isAutoDuplicating = true;
 
         foreach ($allLangs as $lang) {
             $langSlug = $lang->slug;
@@ -95,5 +102,7 @@ class TranslationController
                 }
             }
         }
+        
+        self::$isAutoDuplicating = false;
     }
 }
