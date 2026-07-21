@@ -40,9 +40,9 @@ class NavigationManager
             return $locations;
         }
 
-        foreach ($locations as $location => $defaultMenuId) {
-            if (isset($mappings[$location][$currentLang]) && !empty($mappings[$location][$currentLang])) {
-                $locations[$location] = (int) $mappings[$location][$currentLang];
+        foreach ($mappings as $location => $langs) {
+            if (isset($langs[$currentLang]) && !empty($langs[$currentLang])) {
+                $locations[$location] = (int) $langs[$currentLang];
             }
         }
 
