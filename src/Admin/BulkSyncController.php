@@ -32,16 +32,19 @@ class BulkSyncController
             wp_send_json_error('Unauthorized');
         }
 
-        // Count how many posts/pages we have to process (only original source language posts, or all posts)
-        // To be simple, we just process all standard posts and pages that are published.
-        $query = new \WP_Query([
-            'post_type' => ['post', 'page'],
-            'post_status' => 'publish',
-            'posts_per_page' => -1,
-            'fields' => 'ids'
-        ]);
+        // Count how many posts/pages we have to process using native fast counting
+        $total = 0;
+        $postCount = wp_count_posts('post');
+        if (isset($postCount->publish)) {
+            $total += (int) $postCount->publish;
+        }
 
-        wp_send_json_success(['total' => count($query->posts)]);
+        $pageCount = wp_count_posts('page');
+        if (isset($pageCount->publish)) {
+            $total += (int) $pageCount->publish;
+        }
+
+        wp_send_json_success(['total' => $total]);
     }
 
     public function handleProcessAjax(): void

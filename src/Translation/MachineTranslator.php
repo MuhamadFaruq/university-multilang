@@ -33,12 +33,16 @@ class MachineTranslator
             'q'      => $text,
         ]);
 
+        // Sleep for 300 milliseconds to avoid hitting Google's rate limits (429 Too Many Requests)
+        // during bulk operations.
+        usleep(300000);
+
         $response = wp_remote_get($url, [
             'timeout' => 15,
         ]);
 
-        if (is_wp_error($response)) {
-            return $text; // Return original if error
+        if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+            return $text; // Return original if error or rate limited
         }
 
         $body = wp_remote_retrieve_body($response);

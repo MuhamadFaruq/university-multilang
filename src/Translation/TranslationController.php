@@ -137,10 +137,65 @@ class TranslationController
                             }
                         }
                     }
+
+                    // Copy all Post Meta (Elementor Data, Thumbnail, SEO fields)
+                    $allMeta = get_post_meta($post->ID);
+                    if (!empty($allMeta)) {
+                        $ignoredKeys = [
+                            TranslationManager::META_GROUP_ID,
+                            '_edit_lock',
+                            '_edit_last'
+                        ];
+                        foreach ($allMeta as $metaKey => $metaValues) {
+                            if (in_array($metaKey, $ignoredKeys, true)) continue;
+                            
+                            // Delete default generated meta if any, then copy
+                            delete_post_meta($newPostId, $metaKey);
+                            foreach ($metaValues as $metaValue) {
+                                // post_meta is returned as serialized strings by get_post_meta when not specifying a single key,
+                                // we need to check if it's serialized and maybe unserialize it before update, 
+                                // actually add_post_meta handles serialization automatically if we pass the raw value.
+                                // wait, get_post_meta($id) returns arrays of strings. 
+                                $value = maybe_unserialize($metaValue);
+                                add_post_meta($newPostId, $metaKey, $value);
+                            }
+                        }
+                    }
                 }
             }
         }
         
         self::$isAutoDuplicating = false;
+    }
+
+    /**
+     * Hooked to 'before_delete_post'.
+     * Clears translation group cache when a post is permanently deleted.
+     */
+    public function handlePostDeletion(int $postId): void
+    {
+        // Don't run on autosaves or revisions
+        if (wp_is_post_revision($postId) || wp_is_post_autosave($postId)) {
+            return;
+        }
+
+        $groupId = get_post_meta($postId, TranslationManager::META_GROUP_ID, true);
+        if (!empty($groupId)) {
+            // Unlink this post by deleting its group meta BEFORE it's actually deleted
+            delete_post_meta($postId, TranslationManager::META_GROUP_ID);
+            
+            // Clear cache for ALL posts in this group
+            global $wpdb;
+            $postIds = $wpdb->get_col($wpdb->prepare(
+                "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value = %s",
+                TranslationManager::META_GROUP_ID,
+                $groupId
+            ));
+
+            wp_cache_delete('uml_translations_' . $postId, TranslationManager::CACHE_GROUP);
+            foreach ($postIds as $id) {
+                wp_cache_delete('uml_translations_' . $id, TranslationManager::CACHE_GROUP);
+            }
+        }
     }
 }
