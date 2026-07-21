@@ -59,6 +59,7 @@ class BulkSyncMenu implements MenuInterface
             'nonce'    => wp_create_nonce('uml_bulk_sync_nonce')
         ]);
         
+        ?>
         <style>
             /* Custom Professional Modal */
             .uml-modal-overlay {
