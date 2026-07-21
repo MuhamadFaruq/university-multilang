@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace UniversityMultilang\Admin\Menus;
 
-use UniversityMultilang\Admin\MenuInterface;
+use UniversityMultilang\Admin\Contracts\MenuInterface;
 
 class BulkSyncMenu implements MenuInterface
 {
