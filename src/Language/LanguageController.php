@@ -101,6 +101,24 @@ class LanguageController
         echo '<input type="hidden" name="action" value="add_language">';
         wp_nonce_field('uml_add_language', 'uml_language_nonce');
         
+        echo '<div class="form-field">';
+        echo '<label for="preset_language">Quick Preset (Auto-fill)</label>';
+        echo '<select id="preset_language">';
+        echo '<option value="">-- Choose a preset or type below --</option>';
+        echo '<option value="English|en|en_US">English</option>';
+        echo '<option value="Indonesia|id|id_ID">Indonesia</option>';
+        echo '<option value="Arabic|ar|ar_SA">Arabic</option>';
+        echo '<option value="Chinese (Simplified)|zh-CN|zh_CN">Chinese (Simplified)</option>';
+        echo '<option value="Spanish|es|es_ES">Spanish</option>';
+        echo '<option value="French|fr|fr_FR">French</option>';
+        echo '<option value="German|de|de_DE">German</option>';
+        echo '<option value="Japanese|ja|ja">Japanese</option>';
+        echo '<option value="Korean|ko|ko_KR">Korean</option>';
+        echo '<option value="Hindi|hi|hi_IN">Hindi</option>';
+        echo '</select>';
+        echo '<p>Selecting a preset will automatically fill the fields below correctly.</p>';
+        echo '</div>';
+        
         echo '<div class="form-field form-required term-name-wrap">';
         echo '<label for="language_name">Name</label>';
         echo '<input name="language_name" id="language_name" type="text" value="" size="40" aria-required="true" required>';
@@ -121,6 +139,33 @@ class LanguageController
 
         echo '<p class="submit"><input type="submit" name="submit" id="submit" class="button button-primary" value="Add New Language"></p>';
         echo '</form>';
+        
+        // JavaScript for preset dropdown
+        echo '<script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var preset = document.getElementById("preset_language");
+            var nameInput = document.getElementById("language_name");
+            var slugInput = document.getElementById("language_slug");
+            var localeInput = document.getElementById("language_locale");
+            
+            preset.addEventListener("change", function() {
+                if (this.value === "") {
+                    nameInput.value = "";
+                    slugInput.value = "";
+                    localeInput.value = "";
+                    return;
+                }
+                
+                var parts = this.value.split("|");
+                if (parts.length === 3) {
+                    nameInput.value = parts[0];
+                    slugInput.value = parts[1];
+                    localeInput.value = parts[2];
+                }
+            });
+        });
+        </script>';
+
         echo '</div>';
         echo '</div></div>';
 
