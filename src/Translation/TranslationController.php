@@ -11,15 +11,18 @@ class TranslationController
     private TranslationManager $translationManager;
     private LanguageManager $languageManager;
     private MachineTranslator $machineTranslator;
+    private TermTranslationManager $termTranslationManager;
 
     public function __construct(
         TranslationManager $translationManager,
         LanguageManager $languageManager,
-        MachineTranslator $machineTranslator
+        MachineTranslator $machineTranslator,
+        TermTranslationManager $termTranslationManager
     ) {
         $this->translationManager = $translationManager;
         $this->languageManager = $languageManager;
         $this->machineTranslator = $machineTranslator;
+        $this->termTranslationManager = $termTranslationManager;
     }
 
     /**
@@ -113,6 +116,27 @@ class TranslationController
                 if (!is_wp_error($newPostId)) {
                     $this->translationManager->setPostLanguage($newPostId, $langSlug);
                     $this->translationManager->linkTranslations($post->ID, $newPostId);
+                    
+                    // Map Taxonomies (Categories, Tags)
+                    $taxonomies = get_object_taxonomies($post->post_type);
+                    foreach ($taxonomies as $taxonomy) {
+                        if ($taxonomy === LanguageManager::TAXONOMY) continue;
+                        
+                        $terms = wp_get_object_terms($post->ID, $taxonomy);
+                        if (!empty($terms) && !is_wp_error($terms)) {
+                            $mappedTermIds = [];
+                            foreach ($terms as $term) {
+                                // Find translation of this term
+                                $termTranslations = $this->termTranslationManager->getTranslations((int) $term->term_id);
+                                if (isset($termTranslations[$langSlug])) {
+                                    $mappedTermIds[] = (int) $termTranslations[$langSlug];
+                                }
+                            }
+                            if (!empty($mappedTermIds)) {
+                                wp_set_object_terms($newPostId, $mappedTermIds, $taxonomy, false);
+                            }
+                        }
+                    }
                 }
             }
         }
