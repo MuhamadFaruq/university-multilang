@@ -31,13 +31,25 @@ class RouterServiceProvider extends ServiceProvider
         $this->hooks->addFilter('post_link', $urlManager, 'filterPostLink', 10, 3);
         $this->hooks->addFilter('page_link', $urlManager, 'filterPostLink', 10, 3);
         $this->hooks->addFilter('post_type_link', $urlManager, 'filterPostLink', 10, 3);
+        
+        // Prevent redirect_canonical from fighting our language URLs
+        $this->hooks->addFilter('redirect_canonical', $this, 'disableCanonicalRedirectForLanguages', 10, 2);
+    }
+
+    public function disableCanonicalRedirectForLanguages($redirectUrl, $requestedUrl)
+    {
+        /** @var RequestProcessor $requestProcessor */
+        $requestProcessor = $this->container->get(RequestProcessor::class);
+        if (!empty($requestProcessor->getCurrentLanguage())) {
+            return false;
+        }
+        return $redirectUrl;
     }
 
     public function boot(): void
     {
-        // Execute request interception immediately during plugin boot
-        /** @var RequestProcessor $requestProcessor */
-        $requestProcessor = $this->container->get(RequestProcessor::class);
-        $requestProcessor->interceptRequest();
+        // Execute request interception on 'wp_loaded' so taxonomies are registered
+        // before we query get_terms() in LanguageManager.
+        $this->hooks->addAction('wp_loaded', $this->container->get(RequestProcessor::class), 'interceptRequest');
     }
 }
