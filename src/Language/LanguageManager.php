@@ -37,6 +37,20 @@ class LanguageManager
     }
 
     /**
+     * Get a registered language term by its slug.
+     */
+    public function getLanguageBySlug(string $slug): ?\WP_Term
+    {
+        $languages = $this->getLanguages();
+        foreach ($languages as $lang) {
+            if ($lang->slug === $slug) {
+                return $lang;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Register a new language.
      * 
      * @param string $name The language name (e.g., 'Indonesian')
