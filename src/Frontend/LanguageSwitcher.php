@@ -36,40 +36,48 @@ class LanguageSwitcher
             $translations = $this->translationManager->getTranslations($currentPostId);
         }
 
+        $type = $attributes['type'] ?? 'list'; // list or dropdown
+
+        if ($type === 'dropdown') {
+            $html = '<select class="uml-language-switcher-dropdown" onchange="if(this.value) window.location.href=this.value;">';
+            $html .= '<option value="">-- Language --</option>';
+            foreach ($languages as $lang) {
+                $url = $this->getLanguageUrl($lang->slug, $translations);
+                $html .= '<option value="' . esc_url($url) . '">' . esc_html($lang->name) . '</option>';
+            }
+            $html .= '</select>';
+            return $html;
+        }
+
         $html = '<ul class="uml-language-switcher" style="list-style:none; padding:0; margin:0; display:flex; gap:10px;">';
-
         foreach ($languages as $lang) {
-            $url = home_url('/'); // Default to home
-
-            // If a specific translation exists for this language, use it.
-            if (isset($translations[$lang->slug])) {
-                $translatedPostId = (int) $translations[$lang->slug];
-                // Only link directly to the translation if it's published!
-                if (get_post_status($translatedPostId) === 'publish') {
-                    $url = get_permalink($translatedPostId);
-                }
-            }
-            
-            // Fallback to home url if no published translation found
-            if ($url === home_url('/')) {
-                // We fallback to home url but we must manually append language prefix
-                // because home_url filter might only prepend the *current* viewing language.
-                // We want the URL to explicitly point to the target language home.
-                $parsedUrl = parse_url(home_url('/'));
-                if ($parsedUrl && isset($parsedUrl['host'])) {
-                    $scheme = isset($parsedUrl['scheme']) ? $parsedUrl['scheme'] . '://' : '';
-                    $url = $scheme . $parsedUrl['host'] . '/' . $lang->slug . '/';
-                }
-            }
-
+            $url = $this->getLanguageUrl($lang->slug, $translations);
             $html .= '<li class="uml-lang-item uml-lang-' . esc_attr($lang->slug) . '">';
             $html .= '<a href="' . esc_url($url) . '">' . esc_html($lang->name) . '</a>';
             $html .= '</li>';
         }
-
         $html .= '</ul>';
 
         return $html;
+    }
+
+    private function getLanguageUrl(string $langSlug, array $translations): string
+    {
+        $url = home_url('/');
+        if (isset($translations[$langSlug])) {
+            $translatedPostId = (int) $translations[$langSlug];
+            if (get_post_status($translatedPostId) === 'publish') {
+                return get_permalink($translatedPostId);
+            }
+        }
+        
+        $parsedUrl = parse_url(home_url('/'));
+        if ($parsedUrl && isset($parsedUrl['host'])) {
+            $scheme = isset($parsedUrl['scheme']) ? $parsedUrl['scheme'] . '://' : '';
+            return $scheme . $parsedUrl['host'] . '/' . $langSlug . '/';
+        }
+        
+        return $url;
     }
 
     /**
