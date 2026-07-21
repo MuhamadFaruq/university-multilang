@@ -39,9 +39,19 @@ class MenuSyncMenu implements MenuInterface
         return 'manage_options';
     }
 
-    public function getMenuSlug(): string
+    public function getSlug(): string
     {
         return 'uml-menu-sync';
+    }
+
+    public function getIcon(): string
+    {
+        return '';
+    }
+
+    public function getPosition(): ?int
+    {
+        return null;
     }
 
     public function render(): void
