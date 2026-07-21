@@ -24,36 +24,66 @@ class QueryFilter
      */
     public function filterMainQuery(\WP_Query $query): void
     {
-        // Don't interfere with the admin panel or non-main queries
-        if (is_admin() || !$query->is_main_query()) {
+        // Don't interfere with the admin panel
+        if (is_admin()) {
             return;
         }
 
-        // Only filter archive-like views (home, category, tag, search, date, etc)
         // We don't need to filter singular queries because the URL routing handles finding the exact post.
-        if ($query->is_singular()) {
+        // However, we DO want to filter custom loops, widgets, and archive views on the frontend.
+        if ($query->is_main_query() && $query->is_singular()) {
             return;
         }
+        
+        // Also skip menu queries and media queries
+        $postType = $query->get('post_type');
+        if ($postType === 'nav_menu_item' || $postType === 'attachment') {
+            return;
+        }
+        
+        // error_log('QueryFilter running!');
 
         $currentLang = $this->requestProcessor->getCurrentLanguage();
         
         // If there's no language prefix in the URL, use the default language
         if (empty($currentLang)) {
-            $languages = $this->languageManager->getLanguages();
-            if (!empty($languages)) {
-                $currentLang = reset($languages)->slug;
+            $defaultLang = get_option('uml_default_language');
+            if (!empty($defaultLang)) {
+                $currentLang = $defaultLang;
+            } else {
+                $languages = $this->languageManager->getLanguages();
+                if (!empty($languages)) {
+                    $currentLang = reset($languages)->slug;
+                }
             }
         }
         
         if (!empty($currentLang)) {
             $taxQuery = $query->get('tax_query') ?: [];
             
-            $taxQuery[] = [
-                'taxonomy' => LanguageManager::TAXONOMY,
-                'field'    => 'slug',
-                'terms'    => $currentLang,
-            ];
+            // To prevent our language filter from being swallowed by an existing 'OR' relation,
+            // we wrap the existing tax_query and enforce an 'AND' relation with our language constraint.
+            if (!empty($taxQuery)) {
+                $taxQuery = [
+                    'relation' => 'AND',
+                    $taxQuery,
+                    [
+                        'taxonomy' => LanguageManager::TAXONOMY,
+                        'field'    => 'slug',
+                        'terms'    => $currentLang,
+                    ]
+                ];
+            } else {
+                $taxQuery = [
+                    [
+                        'taxonomy' => LanguageManager::TAXONOMY,
+                        'field'    => 'slug',
+                        'terms'    => $currentLang,
+                    ]
+                ];
+            }
 
+            // Prevent tax_query duplication if we run multiple times on the same query
             $query->set('tax_query', $taxQuery);
         }
     }

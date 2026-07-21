@@ -23,6 +23,8 @@ class LanguageManager
             $languages = get_terms([
                 'taxonomy'   => self::TAXONOMY,
                 'hide_empty' => false,
+                'orderby'    => 'term_id',
+                'order'      => 'ASC',
             ]);
             
             if (is_wp_error($languages)) {
