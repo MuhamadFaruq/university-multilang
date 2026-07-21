@@ -124,7 +124,7 @@ class LanguageSwitcher
                 display: block;
                 padding: 8px 12px;
                 color: #333;
-                text-decoration: none;
+                text-decoration: none !important;
                 border-radius: 6px;
                 font-size: 14px;
                 transition: background 0.2s;
