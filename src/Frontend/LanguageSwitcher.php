@@ -43,9 +43,15 @@ class LanguageSwitcher
 
             // If a specific translation exists for this language, use it.
             if (isset($translations[$lang->slug])) {
-                $translatedPostId = $translations[$lang->slug];
-                $url = get_permalink($translatedPostId);
-            } else {
+                $translatedPostId = (int) $translations[$lang->slug];
+                // Only link directly to the translation if it's published!
+                if (get_post_status($translatedPostId) === 'publish') {
+                    $url = get_permalink($translatedPostId);
+                }
+            }
+            
+            // Fallback to home url if no published translation found
+            if ($url === home_url('/')) {
                 // We fallback to home url but we must manually append language prefix
                 // because home_url filter might only prepend the *current* viewing language.
                 // We want the URL to explicitly point to the target language home.

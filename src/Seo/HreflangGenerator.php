@@ -37,8 +37,11 @@ class HreflangGenerator
                 $translations = $this->translationManager->getTranslations($postId);
                 foreach ($languages as $lang) {
                     if (isset($translations[$lang->slug])) {
-                        $translatedPostId = $translations[$lang->slug];
-                        $urls[$lang->slug] = get_permalink($translatedPostId);
+                        $translatedPostId = (int) $translations[$lang->slug];
+                        // SEO SAFETY: Only output hreflang for published posts
+                        if (get_post_status($translatedPostId) === 'publish') {
+                            $urls[$lang->slug] = get_permalink($translatedPostId);
+                        }
                     }
                 }
             }
