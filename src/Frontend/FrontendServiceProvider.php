@@ -23,7 +23,8 @@ class FrontendServiceProvider extends ServiceProvider
         // Bind QueryFilter
         $this->container->bind(QueryFilter::class, function ($container) {
             return new QueryFilter(
-                $container->get(\UniversityMultilang\Router\RequestProcessor::class)
+                $container->get(\UniversityMultilang\Router\RequestProcessor::class),
+                $container->get(LanguageManager::class)
             );
         });
 

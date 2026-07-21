@@ -10,10 +10,12 @@ use UniversityMultilang\Language\LanguageManager;
 class QueryFilter
 {
     private RequestProcessor $requestProcessor;
+    private LanguageManager $languageManager;
 
-    public function __construct(RequestProcessor $requestProcessor)
+    public function __construct(RequestProcessor $requestProcessor, LanguageManager $languageManager)
     {
         $this->requestProcessor = $requestProcessor;
+        $this->languageManager = $languageManager;
     }
 
     /**
@@ -35,9 +37,11 @@ class QueryFilter
 
         $currentLang = $this->requestProcessor->getCurrentLanguage();
         
-        // If there's no language prefix in the URL, don't filter.
-        // Or if you want to force the default language, you would do it here.
-        // For now, if currentLang is set, we filter.
+        // If there's no language prefix in the URL, use the default language.
+        if (empty($currentLang)) {
+            $currentLang = $this->languageManager->getDefaultLanguageSlug();
+        }
+        
         if (!empty($currentLang)) {
             $taxQuery = $query->get('tax_query') ?: [];
             
