@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace UniversityMultilang\Language;
 
+use UniversityMultilang\Language\Services\LanguageService;
+
 class LanguageController
 {
-    private LanguageManager $languageManager;
+    private LanguageService $languageService;
 
-    public function __construct(LanguageManager $languageManager)
+    public function __construct(LanguageService $languageService)
     {
-        $this->languageManager = $languageManager;
+        $this->languageService = $languageService;
     }
 
     public function handleFormSubmission(): void
@@ -44,12 +46,11 @@ class LanguageController
             exit;
         }
 
-        $result = $this->languageManager->addLanguage($name, $slug, $locale);
-
-        if (is_wp_error($result)) {
-            $redirectUrl = add_query_arg(['page' => 'university-multilang-languages', 'error' => 'insert_failed'], admin_url('admin.php'));
-        } else {
+        try {
+            $this->languageService->addLanguage($name, $slug, $locale);
             $redirectUrl = add_query_arg(['page' => 'university-multilang-languages', 'success' => '1'], admin_url('admin.php'));
+        } catch (\Exception $e) {
+            $redirectUrl = add_query_arg(['page' => 'university-multilang-languages', 'error' => 'insert_failed'], admin_url('admin.php'));
         }
 
         wp_safe_redirect($redirectUrl);
@@ -63,8 +64,8 @@ class LanguageController
         }
 
         $termId = (int) $_GET['term_id'];
-        $this->languageManager->removeLanguage($termId);
-        
+        $this->languageService->removeLanguage($termId);
+
         $redirectUrl = add_query_arg(['page' => 'university-multilang-languages', 'success_delete' => '1'], admin_url('admin.php'));
         wp_safe_redirect($redirectUrl);
         exit;
@@ -72,7 +73,7 @@ class LanguageController
 
     public function renderPage(): void
     {
-        $languages = $this->languageManager->getLanguages();
+        $languages = $this->languageService->getAllLanguages();
 
         echo '<div class="wrap">';
         echo '<h1 class="wp-heading-inline">Manage Languages</h1>';
@@ -87,29 +88,28 @@ class LanguageController
             $errorMsg = $_GET['error'] === 'empty_fields' ? 'Name and Slug are required.' : 'Failed to add language. Slug might already exist.';
             echo '<div class="notice notice-error is-dismissible"><p>' . esc_html($errorMsg) . '</p></div>';
         }
-        
+
         echo '<div id="col-container" class="wp-clearfix">';
 
         // Right column: Table
         echo '<div id="col-right"><div class="col-wrap">';
         echo '<table class="wp-list-table widefat fixed striped">';
-        echo '<thead><tr><th>Name</th><th>Slug</th><th>Locale</th><th>Count</th><th>Action</th></tr></thead>';
+        echo '<thead><tr><th>Name</th><th>Slug</th><th>Locale</th><th>Action</th></tr></thead>';
         echo '<tbody>';
-        
+
         if (empty($languages)) {
             echo '<tr><td colspan="4">No languages registered yet.</td></tr>';
         } else {
             foreach ($languages as $language) {
-                $termId = (int) $language->term_id;
-                $locale = $this->languageManager->getLocale($termId);
-                
+                $termId = $language->getId();
+                $locale = $language->getLocale();
+
                 $deleteUrl = wp_nonce_url(admin_url('admin.php?page=university-multilang-languages&action=delete_language&term_id=' . $termId), 'uml_delete_language', 'uml_delete_nonce');
-                
+
                 echo '<tr>';
-                echo '<td><strong>' . esc_html($language->name) . '</strong></td>';
-                echo '<td>' . esc_html($language->slug) . '</td>';
+                echo '<td><strong>' . esc_html($language->getName()) . '</strong></td>';
+                echo '<td>' . esc_html($language->getSlug()) . '</td>';
                 echo '<td>' . esc_html($locale ?: '-') . '</td>';
-                echo '<td>' . intval($language->count) . '</td>';
                 echo '<td><a href="' . esc_url($deleteUrl) . '" onclick="return confirm(\'Are you sure you want to delete this language?\');" style="color: #d63638;">Delete</a></td>';
                 echo '</tr>';
             }
@@ -125,7 +125,7 @@ class LanguageController
         echo '<form method="post" action="">';
         echo '<input type="hidden" name="action" value="add_language">';
         wp_nonce_field('uml_add_language', 'uml_language_nonce');
-        
+
         echo '<div class="form-field">';
         echo '<label for="preset_language">Quick Preset (Auto-fill)</label>';
         echo '<select id="preset_language">';
@@ -143,7 +143,7 @@ class LanguageController
         echo '</select>';
         echo '<p>Selecting a preset will automatically fill the fields below correctly.</p>';
         echo '</div>';
-        
+
         echo '<div class="form-field form-required term-name-wrap">';
         echo '<label for="language_name">Name</label>';
         echo '<input name="language_name" id="language_name" type="text" value="" size="40" aria-required="true" required>';
@@ -164,7 +164,7 @@ class LanguageController
 
         echo '<p class="submit"><input type="submit" name="submit" id="submit" class="button button-primary" value="Add New Language"></p>';
         echo '</form>';
-        
+
         // JavaScript for preset dropdown
         echo '<script>
         document.addEventListener("DOMContentLoaded", function() {

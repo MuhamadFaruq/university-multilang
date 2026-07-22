@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace UniversityMultilang\Seo;
 
 use UniversityMultilang\Core\ServiceProvider;
-use UniversityMultilang\Language\LanguageManager;
-use UniversityMultilang\Translation\TranslationManager;
+use UniversityMultilang\Language\Services\LanguageService;
+use UniversityMultilang\Frontend\Services\PageContextResolver;
+use UniversityMultilang\Frontend\Services\UrlBuilderService;
 
 class SeoServiceProvider extends ServiceProvider
 {
@@ -15,8 +16,9 @@ class SeoServiceProvider extends ServiceProvider
         // Bind HreflangGenerator
         $this->container->bind(HreflangGenerator::class, function ($container) {
             return new HreflangGenerator(
-                $container->get(LanguageManager::class),
-                $container->get(TranslationManager::class)
+                $container->get(LanguageService::class),
+                $container->get(PageContextResolver::class),
+                $container->get(UrlBuilderService::class)
             );
         });
 

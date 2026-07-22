@@ -1,0 +1,12 @@
+{
+  "name": "university-multilang-e2e",
+  "version": "1.0.0",
+  "description": "E2E Playwright testing suite for University Multilang plugin",
+  "main": "index.js",
+  "scripts": {
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}

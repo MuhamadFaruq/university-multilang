@@ -30,8 +30,7 @@ class AdminServiceProvider extends ServiceProvider
         $this->container->bind(\UniversityMultilang\Admin\BulkSyncController::class, function ($container) {
             return new \UniversityMultilang\Admin\BulkSyncController(
                 $container->get(\UniversityMultilang\Translation\TranslationController::class),
-                $container->get(\UniversityMultilang\Translation\TranslationManager::class),
-                $container->get(\UniversityMultilang\Language\LanguageManager::class)
+                $container->get(\UniversityMultilang\Language\Services\LanguageService::class)
             );
         });
 

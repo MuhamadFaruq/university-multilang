@@ -8,21 +8,25 @@ use Elementor\Widget_Base;
 
 class LanguageSwitcherWidget extends Widget_Base
 {
+    // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
     public function get_name(): string
     {
-        return 'uml_language_switcher_widget';
+        return 'uml_language_switcher';
     }
 
+    // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
     public function get_title(): string
     {
-        return 'UML Language Switcher';
+        return 'Language Switcher';
     }
 
+    // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
     public function get_icon(): string
     {
         return 'eicon-globe';
     }
 
+    // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
     public function get_categories(): array
     {
         return ['general'];

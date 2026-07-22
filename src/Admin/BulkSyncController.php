@@ -5,23 +5,19 @@ declare(strict_types=1);
 namespace UniversityMultilang\Admin;
 
 use UniversityMultilang\Translation\TranslationController;
-use UniversityMultilang\Translation\TranslationManager;
-use UniversityMultilang\Language\LanguageManager;
+use UniversityMultilang\Language\Services\LanguageService;
 
 class BulkSyncController
 {
     private TranslationController $translationController;
-    private TranslationManager $translationManager;
-    private LanguageManager $languageManager;
+    private LanguageService $languageService;
 
     public function __construct(
         TranslationController $translationController,
-        TranslationManager $translationManager,
-        LanguageManager $languageManager
+        LanguageService $languageService
     ) {
         $this->translationController = $translationController;
-        $this->translationManager = $translationManager;
-        $this->languageManager = $languageManager;
+        $this->languageService = $languageService;
     }
 
     public function handleInitAjax(): void
@@ -68,20 +64,24 @@ class BulkSyncController
         ]);
 
         $defaultLang = get_option('uml_default_language');
-        
+
         $processed = 0;
         foreach ($query->posts as $post) {
             // Check if post already has a language
-            $currentLang = $this->translationManager->getPostLanguage($post->ID);
-            
+            $currentLang = $this->languageService->getLanguageSlugForObject($post->ID, 'post');
+
             // If no language, assign the default language
             if (empty($currentLang) && !empty($defaultLang)) {
-                $this->translationManager->setPostLanguage($post->ID, $defaultLang);
+                try {
+                    $this->languageService->setLanguageForObject($post->ID, 'post', $defaultLang);
+                } catch (\Exception $e) {
+                    // Ignore
+                }
             }
-            
+
             // Trigger auto-duplicate programmatically (this also checks if translations already exist)
             $this->translationController->autoDuplicateTranslations($post->ID, $post, true);
-            
+
             $processed++;
         }
 

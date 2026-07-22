@@ -58,7 +58,7 @@ class BulkSyncMenu implements MenuInterface
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce'    => wp_create_nonce('uml_bulk_sync_nonce')
         ]);
-        
+
         ?>
         <style>
             /* Custom Professional Modal */

@@ -12,5 +12,7 @@ class Activator
             'uml_plugin_installed',
             current_time('mysql')
         );
+
+        flush_rewrite_rules();
     }
-} 
+}

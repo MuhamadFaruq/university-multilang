@@ -7,19 +7,28 @@ namespace UniversityMultilang\Language;
 use UniversityMultilang\Core\ServiceProvider;
 use UniversityMultilang\Admin\MenuManager;
 use UniversityMultilang\Language\Menus\LanguageMenu;
+use UniversityMultilang\Language\LanguageController;
+use UniversityMultilang\Language\Contracts\LanguageRepositoryInterface;
+use UniversityMultilang\Language\Repositories\WpTermLanguageRepository;
+use UniversityMultilang\Language\Services\LanguageService;
 
 class LanguageServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // Bind Manager
-        $this->container->bind(LanguageManager::class, function () {
-            return new LanguageManager();
+        // Bind Repository
+        $this->container->bind(LanguageRepositoryInterface::class, function () {
+            return new WpTermLanguageRepository();
+        });
+
+        // Bind Service
+        $this->container->bind(LanguageService::class, function ($container) {
+            return new LanguageService($container->get(LanguageRepositoryInterface::class));
         });
 
         // Bind Controller
         $this->container->bind(LanguageController::class, function ($container) {
-            return new LanguageController($container->get(LanguageManager::class));
+            return new LanguageController($container->get(LanguageService::class));
         });
 
         // Bind Menu
@@ -29,7 +38,7 @@ class LanguageServiceProvider extends ServiceProvider
 
         // Register custom taxonomy hook
         $this->hooks->addAction('init', $this, 'registerTaxonomy');
-        
+
         // Hook form processing
         $this->hooks->addAction('admin_init', $this->container->get(LanguageController::class), 'handleFormSubmission');
     }
@@ -59,7 +68,7 @@ class LanguageServiceProvider extends ServiceProvider
             'rewrite'           => false,
         ];
 
-        register_taxonomy(LanguageManager::TAXONOMY, ['post', 'page'], $args);
+        register_taxonomy(WpTermLanguageRepository::TAXONOMY, ['post', 'page'], $args);
     }
 
     public function boot(): void

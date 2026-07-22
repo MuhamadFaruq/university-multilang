@@ -10,7 +10,7 @@ class Application
 {
     private Container $container;
     private HookManager $hooks;
-    
+
     /**
      * @var ServiceProvider[]
      */
@@ -20,7 +20,7 @@ class Application
     {
         $this->container = new Container();
         $this->hooks = new HookManager();
-        
+
         $this->container->instance(Container::class, $this->container);
         $this->container->instance(HookManager::class, $this->hooks);
         $this->container->instance(Application::class, $this);
@@ -33,7 +33,9 @@ class Application
         // Define all service providers here
         $providerClasses = [
             \UniversityMultilang\Admin\AdminServiceProvider::class,
+            \UniversityMultilang\Settings\SettingsServiceProvider::class,
             \UniversityMultilang\Language\LanguageServiceProvider::class,
+            \UniversityMultilang\Elementor\ElementorServiceProvider::class,
             \UniversityMultilang\Translation\TranslationServiceProvider::class,
             \UniversityMultilang\Router\RouterServiceProvider::class,
             \UniversityMultilang\Frontend\FrontendServiceProvider::class,
@@ -61,5 +63,10 @@ class Application
 
         // 3. Register all collected hooks to WordPress
         $this->hooks->registerHooks();
+    }
+
+    public function getContainer(): Container
+    {
+        return $this->container;
     }
 }

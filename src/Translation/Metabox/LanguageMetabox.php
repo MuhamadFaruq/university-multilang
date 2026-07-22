@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace UniversityMultilang\Translation\Metabox;
 
-use UniversityMultilang\Language\LanguageManager;
-use UniversityMultilang\Translation\TranslationManager;
+use UniversityMultilang\Language\Services\LanguageService;
+use UniversityMultilang\Translation\Services\TranslationService;
 
 class LanguageMetabox
 {
-    private LanguageManager $languageManager;
-    private TranslationManager $translationManager;
+    private LanguageService $languageService;
+    private TranslationService $translationService;
 
-    public function __construct(LanguageManager $languageManager, TranslationManager $translationManager)
+    public function __construct(LanguageService $languageService, TranslationService $translationService)
     {
-        $this->languageManager = $languageManager;
-        $this->translationManager = $translationManager;
+        $this->languageService = $languageService;
+        $this->translationService = $translationService;
     }
 
     public function registerMetabox(): void
@@ -36,11 +36,22 @@ class LanguageMetabox
 
     public function renderMetabox(\WP_Post $post): void
     {
+        if (isset($_GET['uml_unlink_lang']) && isset($_GET['_wpnonce'])) {
+            $nonce = sanitize_text_field($_GET['_wpnonce']);
+            if (wp_verify_nonce($nonce, 'uml_unlink_translation_' . $post->ID)) {
+                try {
+                    $this->translationService->unlinkTranslation($post->ID, 'post');
+                } catch (\Exception $e) {
+                    // Ignore error
+                }
+            }
+        }
+
         wp_nonce_field('uml_save_post_language', 'uml_language_metabox_nonce');
 
-        $languages = $this->languageManager->getLanguages();
-        $currentLanguage = $this->translationManager->getPostLanguage($post->ID);
-        
+        $languages = $this->languageService->getAllLanguages();
+        $currentLanguage = $this->languageService->getLanguageSlugForObject($post->ID, 'post');
+
         if (empty($languages)) {
             echo '<p>No languages configured yet. Please add languages in the settings.</p>';
             return;
@@ -50,8 +61,8 @@ class LanguageMetabox
         echo '<select name="uml_post_language" id="uml_post_language" style="width: 100%;">';
         echo '<option value="">-- Select Language --</option>';
         foreach ($languages as $lang) {
-            $selected = selected($currentLanguage, $lang->slug, false);
-            echo '<option value="' . esc_attr($lang->slug) . '" ' . $selected . '>' . esc_html($lang->name) . '</option>';
+            $selected = selected($currentLanguage, $lang->getSlug(), false);
+            echo '<option value="' . esc_attr($lang->getSlug()) . '" ' . $selected . '>' . esc_html($lang->getName()) . '</option>';
         }
         echo '</select>';
 
@@ -60,23 +71,33 @@ class LanguageMetabox
         echo '<p><strong>Translations:</strong></p>';
         echo '<ul>';
 
-        $translations = $this->translationManager->getTranslations($post->ID);
+        $translations = $this->translationService->getTranslations($post->ID, 'post');
 
         foreach ($languages as $lang) {
             // Skip the language of the current post
-            if ($lang->slug === $currentLanguage) {
+            if ($lang->getSlug() === $currentLanguage) {
                 continue;
             }
 
-            if (isset($translations[$lang->slug])) {
-                $translatedPostId = $translations[$lang->slug];
-                $editLink = get_edit_post_link($translatedPostId);
-                echo '<li>' . esc_html($lang->name) . ': <a href="' . esc_url($editLink) . '">Edit</a></li>';
+            if (isset($translations[$lang->getSlug()])) {
+                $translatedPostId = $translations[$lang->getSlug()];
+                $editLink = get_edit_post_link($translatedPostId) ?: admin_url('post.php?post=' . $translatedPostId . '&action=edit');
+                $status = ucfirst(get_post_status($translatedPostId) ?: 'publish');
+                $unlinkUrl = wp_nonce_url(
+                    admin_url('post.php?post=' . $post->ID . '&action=edit&uml_unlink_lang=' . $lang->getSlug()),
+                    'uml_unlink_translation_' . $post->ID
+                );
+
+                echo '<li style="margin-bottom:6px;">';
+                echo '<strong>' . esc_html($lang->getName()) . ':</strong> ';
+                echo '<a href="' . esc_url($editLink) . '">Edit</a> ';
+                echo '<span class="post-state" style="font-size:11px; background:#e0e0e0; padding:2px 5px; border-radius:3px;">(' . esc_html($status) . ')</span> ';
+                echo '<a href="' . esc_url($unlinkUrl) . '" style="color:#d9534f; font-size:11px; text-decoration:none;" onclick="return confirm(\'Unlink this translation?\');">[Unlink]</a>';
+                echo '</li>';
             } else {
                 // Determine post type and create 'add new' link
-                $postTypeObj = get_post_type_object($post->post_type);
-                $newPostLink = admin_url('post-new.php?post_type=' . $post->post_type . '&from_post=' . $post->ID . '&new_lang=' . $lang->slug);
-                echo '<li>' . esc_html($lang->name) . ': <a href="' . esc_url($newPostLink) . '" style="color: green;">+ Add</a></li>';
+                $newPostLink = admin_url('post-new.php?post_type=' . $post->post_type . '&from_post=' . $post->ID . '&new_lang=' . $lang->getSlug());
+                echo '<li>' . esc_html($lang->getName()) . ': <a href="' . esc_url($newPostLink) . '" style="color: green;">+ Add</a></li>';
             }
         }
         echo '</ul>';
@@ -114,10 +135,11 @@ class LanguageMetabox
         if (isset($_POST['uml_post_language'])) {
             $languageSlug = sanitize_title($_POST['uml_post_language']);
             if (!empty($languageSlug)) {
-                $this->translationManager->setPostLanguage($postId, $languageSlug);
-                
-                // Initialize translation group if not exist
-                $this->translationManager->getTranslationGroupId($postId);
+                try {
+                    $this->languageService->setLanguageForObject($postId, 'post', $languageSlug);
+                } catch (\Exception $e) {
+                    // Ignore or log error
+                }
             }
         }
     }

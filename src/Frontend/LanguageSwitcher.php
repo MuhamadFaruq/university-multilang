@@ -4,20 +4,27 @@ declare(strict_types=1);
 
 namespace UniversityMultilang\Frontend;
 
-use UniversityMultilang\Language\LanguageManager;
-use UniversityMultilang\Translation\TranslationManager;
+use UniversityMultilang\Language\Services\LanguageService;
+use UniversityMultilang\Frontend\Services\PageContextResolver;
+use UniversityMultilang\Frontend\Services\UrlBuilderService;
 use UniversityMultilang\Router\RequestProcessor;
 
 class LanguageSwitcher
 {
-    private LanguageManager $languageManager;
-    private TranslationManager $translationManager;
+    private LanguageService $languageService;
+    private PageContextResolver $contextResolver;
+    private UrlBuilderService $urlBuilder;
     private RequestProcessor $requestProcessor;
 
-    public function __construct(LanguageManager $languageManager, TranslationManager $translationManager, RequestProcessor $requestProcessor)
-    {
-        $this->languageManager = $languageManager;
-        $this->translationManager = $translationManager;
+    public function __construct(
+        LanguageService $languageService,
+        PageContextResolver $contextResolver,
+        UrlBuilderService $urlBuilder,
+        RequestProcessor $requestProcessor
+    ) {
+        $this->languageService = $languageService;
+        $this->contextResolver = $contextResolver;
+        $this->urlBuilder = $urlBuilder;
         $this->requestProcessor = $requestProcessor;
     }
 
@@ -26,30 +33,23 @@ class LanguageSwitcher
      */
     public function renderSwitcher(array $attributes = []): string
     {
-        $languages = $this->languageManager->getLanguages();
+        $languages = $this->languageService->getAllLanguages();
         if (empty($languages)) {
             return '';
         }
 
-        $currentPostId = get_queried_object_id();
-        $translations = [];
-
-        // If we are on a single post/page, try to find translations
-        if (is_singular() && $currentPostId) {
-            $translations = $this->translationManager->getTranslations($currentPostId);
-        }
-
+        $urlContext = $this->contextResolver->resolveCurrentContext();
         $type = $attributes['type'] ?? 'list'; // list or dropdown
 
         if ($type === 'dropdown') {
-            return $this->renderCustomDropdown($languages, $translations);
+            return $this->renderCustomDropdown($languages, $urlContext);
         }
 
         $html = '<ul class="uml-language-switcher" style="list-style:none; padding:0; margin:0; display:flex; gap:10px;">';
         foreach ($languages as $lang) {
-            $url = $this->getLanguageUrl($lang->slug, $translations);
-            $html .= '<li class="uml-lang-item uml-lang-' . esc_attr($lang->slug) . '">';
-            $html .= '<a href="' . esc_url($url) . '">' . esc_html($lang->name) . '</a>';
+            $url = $this->urlBuilder->buildLanguageUrl($urlContext, $lang->getSlug());
+            $html .= '<li class="uml-lang-item uml-lang-' . esc_attr($lang->getSlug()) . '">';
+            $html .= '<a href="' . esc_url($url) . '">' . esc_html($lang->getName()) . '</a>';
             $html .= '</li>';
         }
         $html .= '</ul>';
@@ -57,18 +57,18 @@ class LanguageSwitcher
         return $html;
     }
 
-    private function renderCustomDropdown(array $languages, array $translations): string
+    private function renderCustomDropdown(array $languages, \UniversityMultilang\Frontend\DTOs\UrlContext $urlContext): string
     {
         $currentLangSlug = $this->requestProcessor->getCurrentLanguage();
         if (empty($currentLangSlug)) {
             $defaultLang = get_option('uml_default_language');
-            $currentLangSlug = !empty($defaultLang) ? $defaultLang : $languages[0]->slug;
+            $currentLangSlug = !empty($defaultLang) ? $defaultLang : $languages[0]->getSlug();
         }
 
         $currentLangName = 'Language';
         foreach ($languages as $lang) {
-            if ($lang->slug === $currentLangSlug) {
-                $currentLangName = strtoupper(substr($lang->slug, 0, 2));
+            if ($lang->getSlug() === $currentLangSlug) {
+                $currentLangName = strtoupper(substr($lang->getSlug(), 0, 2));
                 break;
             }
         }
@@ -150,14 +150,14 @@ class LanguageSwitcher
                 <span><?php echo esc_html($currentLangName); ?></span>
             </div>
             <ul class="uml-dropdown-menu">
-                <?php foreach ($languages as $lang): ?>
-                    <?php 
-                        $url = $this->getLanguageUrl($lang->slug, $translations); 
-                        $isActive = ($lang->slug === $currentLangSlug);
+                <?php foreach ($languages as $lang) : ?>
+                    <?php
+                        $url = $this->urlBuilder->buildLanguageUrl($urlContext, $lang->getSlug());
+                        $isActive = ($lang->getSlug() === $currentLangSlug);
                     ?>
                     <li>
                         <a href="<?php echo esc_url($url); ?>" class="uml-dropdown-item <?php echo $isActive ? 'active' : ''; ?>">
-                            <?php echo esc_html($lang->name); ?>
+                            <?php echo esc_html($lang->getName()); ?>
                         </a>
                     </li>
                 <?php endforeach; ?>
@@ -165,25 +165,6 @@ class LanguageSwitcher
         </div>
         <?php
         return ob_get_clean();
-    }
-
-    private function getLanguageUrl(string $langSlug, array $translations): string
-    {
-        $url = home_url('/');
-        if (isset($translations[$langSlug])) {
-            $translatedPostId = (int) $translations[$langSlug];
-            if (get_post_status($translatedPostId) === 'publish') {
-                return get_permalink($translatedPostId);
-            }
-        }
-        
-        $parsedUrl = parse_url(home_url('/'));
-        if ($parsedUrl && isset($parsedUrl['host'])) {
-            $scheme = isset($parsedUrl['scheme']) ? $parsedUrl['scheme'] . '://' : '';
-            return $scheme . $parsedUrl['host'] . '/' . $langSlug . '/';
-        }
-        
-        return $url;
     }
 
     /**

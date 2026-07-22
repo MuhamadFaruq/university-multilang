@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace UniversityMultilang\Translation;
 
-class MachineTranslator
+use UniversityMultilang\Translation\Contracts\ContentTranslatorInterface;
+
+class MachineTranslator implements ContentTranslatorInterface
 {
     /**
      * Translates text using the unofficial free Google Translate API.
      * Note: This is a best-effort approach without an API key.
-     * 
+     *
      * @param string $text The text to translate.
      * @param string $sourceLang The source language code (e.g. 'id' or 'auto').
      * @param string $targetLang The target language code (e.g. 'en').
@@ -24,7 +26,7 @@ class MachineTranslator
         // The free endpoint only supports up to ~5000 characters per request.
         // We'll just truncate or limit if it's too long to prevent errors,
         // or just let it fail gracefully.
-        
+
         $url = 'https://translate.googleapis.com/translate_a/single?' . http_build_query([
             'client' => 'gtx',
             'sl'     => $sourceLang,

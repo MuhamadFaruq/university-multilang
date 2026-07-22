@@ -4,16 +4,39 @@ declare(strict_types=1);
 
 namespace UniversityMultilang\Router;
 
-use UniversityMultilang\Language\LanguageManager;
+use UniversityMultilang\Router\Contracts\WpRequestRepositoryInterface;
+use UniversityMultilang\Router\Services\LanguageDetectorService;
+use UniversityMultilang\Router\Services\UriModifierService;
+use UniversityMultilang\Router\Services\CanonicalRedirectService;
+use UniversityMultilang\Router\Services\RoutingGuardService;
+use UniversityMultilang\Router\Services\RoutingContextService;
+use UniversityMultilang\Router\DTOs\RequestContext;
 
 class RequestProcessor
 {
-    private LanguageManager $languageManager;
+    private WpRequestRepositoryInterface $requestRepository;
+    private LanguageDetectorService $detectorService;
+    private UriModifierService $modifierService;
+    private CanonicalRedirectService $redirectService;
+    private RoutingGuardService $guardService;
+    private ?RoutingContextService $contextService;
+
     private string $currentLanguage = '';
 
-    public function __construct(LanguageManager $languageManager)
-    {
-        $this->languageManager = $languageManager;
+    public function __construct(
+        WpRequestRepositoryInterface $requestRepository,
+        LanguageDetectorService $detectorService,
+        UriModifierService $modifierService,
+        CanonicalRedirectService $redirectService,
+        ?RoutingGuardService $guardService = null,
+        ?RoutingContextService $contextService = null
+    ) {
+        $this->requestRepository = $requestRepository;
+        $this->detectorService = $detectorService;
+        $this->modifierService = $modifierService;
+        $this->redirectService = $redirectService;
+        $this->guardService = $guardService ?? new RoutingGuardService();
+        $this->contextService = $contextService;
     }
 
     /**
@@ -21,38 +44,42 @@ class RequestProcessor
      */
     public function interceptRequest(): void
     {
-        if (is_admin()) {
+        if ($this->requestRepository->isAdmin()) {
             return;
         }
 
-        $requestUri = $_SERVER['REQUEST_URI'] ?? '';
-        $path = parse_url($requestUri, PHP_URL_PATH) ?: '';
-        $path = ltrim($path, '/');
+        $rawUri = $this->requestRepository->getRequestUri();
 
-        // Extract potential language slug
-        $parts = explode('/', $path);
-        $potentialSlug = $parts[0] ?? '';
-
-        if (!empty($potentialSlug)) {
-            $languages = $this->languageManager->getLanguages();
-            $languageSlugs = array_map(function ($lang) {
-                return $lang->slug;
-            }, $languages);
-
-            if (in_array($potentialSlug, $languageSlugs, true)) {
-                $this->currentLanguage = $potentialSlug;
-
-                // Remove the language prefix from REQUEST_URI so WP doesn't see it
-                // e.g. /en/about-us/ -> /about-us/
-                $prefix = '/' . $potentialSlug;
-                if (strpos($requestUri, $prefix) === 0) {
-                    $newUri = substr($requestUri, strlen($prefix));
-                    if (empty($newUri)) {
-                        $newUri = '/';
-                    }
-                    $_SERVER['REQUEST_URI'] = $newUri;
-                }
+        // Check if URI should bypass routing
+        if ($this->guardService->shouldBypass($rawUri)) {
+            $this->currentLanguage = '';
+            if ($this->contextService !== null) {
+                $this->contextService->setCurrentLanguage('');
             }
+            return;
+        }
+
+        $context = new RequestContext($rawUri);
+
+        // Detect Language
+        $routingResult = $this->detectorService->detect($context);
+
+        $detectedLang = $routingResult->getLanguageSlug();
+        if (!empty($detectedLang)) {
+            $this->currentLanguage = $detectedLang;
+            if ($this->contextService !== null) {
+                $this->contextService->setCurrentLanguage($detectedLang);
+            }
+        }
+
+        // Handle Redirects (if any)
+        $this->redirectService->handleRedirectIfNeeded($routingResult);
+
+        // Modify URI for WordPress Core
+        $modifiedUri = $this->modifierService->modifyUri($context, $routingResult);
+
+        if ($modifiedUri !== $rawUri) {
+            $this->requestRepository->setRequestUri($modifiedUri);
         }
     }
 

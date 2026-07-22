@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<ruleset name="University Multilang Standards">
+    <description>Coding standards for University Multilang plugin.</description>
+
+    <!-- Pass some flags to PHPCS -->
+    <arg value="sp"/>
+    <arg name="colors"/>
+    <arg name="extensions" value="php"/>
+
+    <!-- Check all files in src/ -->
+    <file>./src</file>
+
+    <!-- Exclude tests/ and vendor/ -->
+    <exclude-pattern>./tests/*</exclude-pattern>
+    <exclude-pattern>./vendor/*</exclude-pattern>
+
+    <!-- Base ruleset on PSR-12 -->
+    <rule ref="PSR12"/>
+
+    <!-- Optional: Add WordPress Coding Standards if installed -->
+    <!-- <rule ref="WordPress"/> -->
+</ruleset>

@@ -8,13 +8,13 @@ use UniversityMultilang\Core\ServiceProvider;
 use UniversityMultilang\Admin\MenuManager;
 use UniversityMultilang\Navigation\Menus\MenuSyncMenu;
 use UniversityMultilang\Router\RequestProcessor;
-use UniversityMultilang\Language\LanguageManager;
+use UniversityMultilang\Language\Services\LanguageService;
 
 class NavigationServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // Bind Manager
+        // Bind NavigationManager
         $this->container->bind(NavigationManager::class, function ($container) {
             return new NavigationManager($container->get(RequestProcessor::class));
         });
@@ -24,20 +24,20 @@ class NavigationServiceProvider extends ServiceProvider
             return new NavigationController($container->get(NavigationManager::class));
         });
 
-        // Bind Menu
+        // Bind MenuSyncMenu
         $this->container->bind(MenuSyncMenu::class, function ($container) {
             return new MenuSyncMenu(
                 $container->get(NavigationManager::class),
-                $container->get(LanguageManager::class)
+                $container->get(LanguageService::class)
             );
         });
 
         // Register hooks
         $navigationManager = $this->container->get(NavigationManager::class);
-        
+
         // Filter theme_mod_nav_menu_locations
         $this->hooks->addFilter('theme_mod_nav_menu_locations', $navigationManager, 'filterNavMenuLocations');
-        
+
         // Form submission
         $this->hooks->addAction('admin_init', $this->container->get(NavigationController::class), 'handleFormSubmission');
     }

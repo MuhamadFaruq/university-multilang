@@ -6,17 +6,17 @@ namespace UniversityMultilang\Navigation\Menus;
 
 use UniversityMultilang\Admin\Contracts\MenuInterface;
 use UniversityMultilang\Navigation\NavigationManager;
-use UniversityMultilang\Language\LanguageManager;
+use UniversityMultilang\Language\Services\LanguageService;
 
 class MenuSyncMenu implements MenuInterface
 {
     private NavigationManager $navigationManager;
-    private LanguageManager $languageManager;
+    private LanguageService $languageService;
 
-    public function __construct(NavigationManager $navigationManager, LanguageManager $languageManager)
+    public function __construct(NavigationManager $navigationManager, LanguageService $languageService)
     {
         $this->navigationManager = $navigationManager;
-        $this->languageManager = $languageManager;
+        $this->languageService = $languageService;
     }
 
     public function getParentSlug(): string
@@ -57,8 +57,8 @@ class MenuSyncMenu implements MenuInterface
     public function render(): void
     {
         $mappings = $this->navigationManager->getMappings();
-        $languages = $this->languageManager->getLanguages();
-        
+        $languages = $this->languageService->getAllLanguages();
+
         // Get registered theme locations
         global $_wp_registered_nav_menus;
         $locations = $_wp_registered_nav_menus ?? [];
@@ -88,7 +88,7 @@ class MenuSyncMenu implements MenuInterface
 
         echo '<form method="post" action="' . esc_url(admin_url('admin.php?page=uml-menu-sync')) . '">';
         wp_nonce_field('uml_save_menu_sync_action', 'uml_menu_sync_nonce');
-        
+
         echo '<table class="form-table" role="presentation">';
         echo '<tbody>';
 
@@ -96,20 +96,20 @@ class MenuSyncMenu implements MenuInterface
             echo '<tr>';
             echo '<th scope="row"><strong>' . esc_html($locationName) . '</strong> <br><small>(' . esc_html($locationSlug) . ')</small></th>';
             echo '<td>';
-            
+
             foreach ($languages as $lang) {
-                $currentMapping = $mappings[$locationSlug][$lang->slug] ?? '';
+                $currentMapping = $mappings[$locationSlug][$lang->getSlug()] ?? '';
 
                 echo '<div style="margin-bottom: 10px;">';
-                echo '<label style="display:inline-block; width: 100px;">' . esc_html($lang->name) . ':</label>';
-                echo '<select name="uml_menu_mapping[' . esc_attr($locationSlug) . '][' . esc_attr($lang->slug) . ']">';
+                echo '<label style="display:inline-block; width: 100px;">' . esc_html($lang->getName()) . ':</label>';
+                echo '<select name="uml_menu_mapping[' . esc_attr($locationSlug) . '][' . esc_attr($lang->getSlug()) . ']">';
                 echo '<option value="">-- Do not translate --</option>';
-                
+
                 foreach ($allMenus as $menu) {
                     $selected = selected($currentMapping, $menu->term_id, false);
                     echo '<option value="' . esc_attr((string)$menu->term_id) . '" ' . $selected . '>' . esc_html($menu->name) . '</option>';
                 }
-                
+
                 echo '</select>';
                 echo '</div>';
             }
@@ -124,7 +124,7 @@ class MenuSyncMenu implements MenuInterface
         echo '<p class="submit">';
         echo '<input type="submit" name="uml_save_menu_sync" id="submit" class="button button-primary" value="Save Mappings">';
         echo '</p>';
-        
+
         echo '</form>';
         echo '</div>';
     }

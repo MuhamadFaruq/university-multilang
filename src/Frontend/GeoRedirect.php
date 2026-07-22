@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace UniversityMultilang\Frontend;
 
-use UniversityMultilang\Language\LanguageManager;
+use UniversityMultilang\Language\Services\LanguageService;
 
 class GeoRedirect
 {
-    private LanguageManager $languageManager;
+    private LanguageService $languageService;
 
-    public function __construct(LanguageManager $languageManager)
+    public function __construct(LanguageService $languageService)
     {
-        $this->languageManager = $languageManager;
+        $this->languageService = $languageService;
     }
 
     public function enqueueScripts(): void
@@ -30,26 +30,25 @@ class GeoRedirect
             true
         );
 
-        $languages = $this->languageManager->getLanguages();
+        $languages = $this->languageService->getAllLanguages();
         $mapping = [];
 
         foreach ($languages as $lang) {
-            $termId = (int) $lang->term_id;
-            $locale = $this->languageManager->getLocale($termId);
-            
+            $locale = $lang->getLocale();
+
             // Extract the country code from the locale (e.g., id_ID -> ID)
             if (!empty($locale) && strpos($locale, '_') !== false) {
                 $parts = explode('_', $locale);
                 $countryCode = strtoupper(end($parts));
-                
+
                 // Construct the root URL for this language
                 $parsedUrl = parse_url(home_url('/'));
                 if ($parsedUrl && isset($parsedUrl['host'])) {
                     $scheme = isset($parsedUrl['scheme']) ? $parsedUrl['scheme'] . '://' : '';
-                    $langUrl = $scheme . $parsedUrl['host'] . '/' . $lang->slug . '/';
-                    
+                    $langUrl = $scheme . $parsedUrl['host'] . '/' . $lang->getSlug() . '/';
+
                     $mapping[$countryCode] = [
-                        'slug' => $lang->slug,
+                        'slug' => $lang->getSlug(),
                         'url'  => $langUrl,
                     ];
                 }

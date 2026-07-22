@@ -4,58 +4,37 @@ declare(strict_types=1);
 
 namespace UniversityMultilang\Router;
 
-use UniversityMultilang\Translation\TranslationManager;
+use UniversityMultilang\Language\Services\LanguageService;
+use UniversityMultilang\Router\Services\RouteBuilderService;
 
 class UrlManager
 {
     private RequestProcessor $requestProcessor;
-    private TranslationManager $translationManager;
+    private LanguageService $languageService;
+    private RouteBuilderService $routeBuilder;
 
-    public function __construct(RequestProcessor $requestProcessor, TranslationManager $translationManager)
-    {
+    public function __construct(
+        RequestProcessor $requestProcessor,
+        LanguageService $languageService,
+        RouteBuilderService $routeBuilder
+    ) {
         $this->requestProcessor = $requestProcessor;
-        $this->translationManager = $translationManager;
-    }
-
-    /**
-     * Add language prefix to a URL.
-     */
-    private function addLanguagePrefix(string $url, string $languageSlug): string
-    {
-        if (empty($languageSlug)) {
-            return $url;
-        }
-
-        $parsedUrl = parse_url($url);
-        if (!$parsedUrl || !isset($parsedUrl['host'])) {
-            return $url;
-        }
-
-        $scheme = isset($parsedUrl['scheme']) ? $parsedUrl['scheme'] . '://' : '';
-        $host = $parsedUrl['host'];
-        $port = isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '';
-        $path = $parsedUrl['path'] ?? '/';
-        $query = isset($parsedUrl['query']) ? '?' . $parsedUrl['query'] : '';
-        $fragment = isset($parsedUrl['fragment']) ? '#' . $parsedUrl['fragment'] : '';
-
-        // Inject language slug at the beginning of the path
-        $path = '/' . $languageSlug . $path;
-
-        return $scheme . $host . $port . $path . $query . $fragment;
+        $this->languageService = $languageService;
+        $this->routeBuilder = $routeBuilder;
     }
 
     public function filterHomeUrl(string $url, string $path, ?string $origScheme, ?int $blogId): string
     {
         $currentLang = $this->requestProcessor->getCurrentLanguage();
         if (!empty($currentLang)) {
-            return $this->addLanguagePrefix($url, $currentLang);
+            return $this->routeBuilder->addLanguagePrefix($url, $currentLang);
         }
         return $url;
     }
 
     /**
      * Filter post or page link.
-     * 
+     *
      * @param string $permalink
      * @param \WP_Post|int $post
      * @param bool $leavenameOrSample
@@ -70,11 +49,59 @@ class UrlManager
         }
 
         if ($postId > 0) {
-            $lang = $this->translationManager->getPostLanguage($postId);
-            if ($lang) {
-                return $this->addLanguagePrefix($permalink, $lang);
+            $lang = $this->languageService->getLanguageSlugForObject($postId, 'post');
+            if (!empty($lang)) {
+                return $this->routeBuilder->addLanguagePrefix($permalink, $lang);
             }
         }
         return $permalink;
+    }
+
+    /**
+     * Filter term link.
+     *
+     * @param string $termlink
+     * @param \WP_Term|object|int $term
+     * @param string $taxonomy
+     */
+    public function filterTermLink(string $termlink, $term, string $taxonomy = ''): string
+    {
+        $termId = 0;
+        if ($term instanceof \WP_Term) {
+            $termId = (int) $term->term_id;
+        } elseif (is_object($term) && isset($term->term_id)) {
+            $termId = (int) $term->term_id;
+        } elseif (is_numeric($term)) {
+            $termId = (int) $term;
+        }
+
+        if ($termId > 0) {
+            $lang = $this->languageService->getLanguageSlugForObject($termId, 'term');
+            if (!empty($lang)) {
+                return $this->routeBuilder->addLanguagePrefix($termlink, $lang);
+            }
+        }
+
+        $currentLang = $this->requestProcessor->getCurrentLanguage();
+        if (!empty($currentLang)) {
+            return $this->routeBuilder->addLanguagePrefix($termlink, $currentLang);
+        }
+
+        return $termlink;
+    }
+
+    /**
+     * Filter post type archive link.
+     *
+     * @param string $link
+     * @param string $postType
+     */
+    public function filterPostTypeArchiveLink(string $link, string $postType): string
+    {
+        $currentLang = $this->requestProcessor->getCurrentLanguage();
+        if (!empty($currentLang)) {
+            return $this->routeBuilder->addLanguagePrefix($link, $currentLang);
+        }
+        return $link;
     }
 }

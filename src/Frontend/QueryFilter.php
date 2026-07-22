@@ -5,17 +5,18 @@ declare(strict_types=1);
 namespace UniversityMultilang\Frontend;
 
 use UniversityMultilang\Router\RequestProcessor;
-use UniversityMultilang\Language\LanguageManager;
+use UniversityMultilang\Language\Services\LanguageService;
+use UniversityMultilang\Language\Repositories\WpTermLanguageRepository;
 
 class QueryFilter
 {
     private RequestProcessor $requestProcessor;
-    private LanguageManager $languageManager;
+    private LanguageService $languageService;
 
-    public function __construct(RequestProcessor $requestProcessor, LanguageManager $languageManager)
+    public function __construct(RequestProcessor $requestProcessor, LanguageService $languageService)
     {
         $this->requestProcessor = $requestProcessor;
-        $this->languageManager = $languageManager;
+        $this->languageService = $languageService;
     }
 
     /**
@@ -34,33 +35,33 @@ class QueryFilter
         if ($query->is_main_query() && $query->is_singular()) {
             return;
         }
-        
+
         // Also skip menu queries and media queries
         $postType = $query->get('post_type');
         if ($postType === 'nav_menu_item' || $postType === 'attachment') {
             return;
         }
-        
+
         // error_log('QueryFilter running!');
 
         $currentLang = $this->requestProcessor->getCurrentLanguage();
-        
+
         // If there's no language prefix in the URL, use the default language
         if (empty($currentLang)) {
             $defaultLang = get_option('uml_default_language');
             if (!empty($defaultLang)) {
                 $currentLang = $defaultLang;
             } else {
-                $languages = $this->languageManager->getLanguages();
+                $languages = $this->languageService->getAllLanguages();
                 if (!empty($languages)) {
-                    $currentLang = reset($languages)->slug;
+                    $currentLang = reset($languages)->getSlug();
                 }
             }
         }
-        
+
         if (!empty($currentLang)) {
             $taxQuery = $query->get('tax_query') ?: [];
-            
+
             // To prevent our language filter from being swallowed by an existing 'OR' relation,
             // we wrap the existing tax_query and enforce an 'AND' relation with our language constraint.
             if (!empty($taxQuery)) {
@@ -68,7 +69,7 @@ class QueryFilter
                     'relation' => 'AND',
                     $taxQuery,
                     [
-                        'taxonomy' => LanguageManager::TAXONOMY,
+                        'taxonomy' => WpTermLanguageRepository::TAXONOMY,
                         'field'    => 'slug',
                         'terms'    => $currentLang,
                     ]
@@ -76,7 +77,7 @@ class QueryFilter
             } else {
                 $taxQuery = [
                     [
-                        'taxonomy' => LanguageManager::TAXONOMY,
+                        'taxonomy' => WpTermLanguageRepository::TAXONOMY,
                         'field'    => 'slug',
                         'terms'    => $currentLang,
                     ]

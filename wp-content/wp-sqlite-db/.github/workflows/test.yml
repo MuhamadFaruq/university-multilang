@@ -1,0 +1,56 @@
+name: Test
+
+on:
+  pull_request:
+    branches:
+      - 'master'
+    paths-ignore:
+      - '**.md'
+  workflow_dispatch:
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['5.6', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+
+    name: Unit tests on PHP ${{ matrix.php-version }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+
+      - name: 'Validate composer.json'
+        run: composer validate --strict
+
+      - name: 'Validate PHP syntax'
+        run: php -l src/db.php
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v4
+        with:
+          # Bust the cache at least once a month - output format: YYYY-MM.
+          custom-cache-suffix: $(date -u "+%Y-%m")
+
+      - name: Capture package versions for conditional alignment
+        id: versions
+        run: |
+          echo "wordpress=$(composer show roots/wordpress --format=json | jq -r '.versions[0]')" >> $GITHUB_OUTPUT
+          echo "wp-phpunit=$(composer show wp-phpunit/wp-phpunit --format=json | jq -r '.versions[0]')" >> $GITHUB_OUTPUT
+
+      - name: Align wp-phpunit version with WordPress
+        if: ${{ steps.versions.outputs.wordpress != steps.versions.outputs.wp-phpunit }}
+        run: composer require --dev wp-phpunit/wp-phpunit ${{ steps.versions.outputs.wordpress }}
+
+      - name: Run tests
+        run: composer test
+
+

@@ -20,7 +20,7 @@ class NavigationManager
     /**
      * Hooked to 'theme_mod_nav_menu_locations'
      * Swaps the menu IDs based on current language.
-     * 
+     *
      * @param array|false $locations
      * @return array|false
      */
@@ -51,7 +51,7 @@ class NavigationManager
 
     /**
      * Get saved mappings.
-     * 
+     *
      * @return array
      */
     public function getMappings(): array
@@ -61,7 +61,7 @@ class NavigationManager
 
     /**
      * Save mappings.
-     * 
+     *
      * @param array $mappings
      */
     public function saveMappings(array $mappings): void

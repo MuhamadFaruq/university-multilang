@@ -1,7 +1,9 @@
 <?php
+
 declare(strict_types=1);
 
 use UniversityMultilang\Setup\Activator;
+use UniversityMultilang\Setup\Deactivator;
 use UniversityMultilang\Core\Application;
 
 /**
@@ -14,6 +16,7 @@ use UniversityMultilang\Core\Application;
  * Author: Faruq
  * License: GPL-2.0-or-later
  * Text Domain: university-multilang
+ * Domain Path: /languages
  */
 
 
@@ -33,5 +36,15 @@ register_activation_hook(
     [Activator::class, 'activate']
 );
 
-$app = new Application();
-$app->boot();
+register_deactivation_hook(
+    UML_PLUGIN_FILE,
+    [Deactivator::class, 'deactivate']
+);
+
+add_action('plugins_loaded', function () {
+    load_plugin_textdomain('university-multilang', false, dirname(plugin_basename(UML_PLUGIN_FILE)) . '/languages');
+});
+
+global $university_multilang_app;
+$university_multilang_app = new Application();
+$university_multilang_app->boot();
