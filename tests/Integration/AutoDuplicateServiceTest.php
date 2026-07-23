@@ -111,6 +111,9 @@ class AutoDuplicateServiceTest extends IntegrationTestCase
             'post_type'   => 'post',
         ]);
 
+        // Remove any auto-assigned language term
+        wp_delete_object_term_relationships($postId, \UniversityMultilang\Language\Repositories\WpTermLanguageRepository::TAXONOMY);
+
         $wpPost = get_post($postId);
         $this->autoDuplicateService->duplicatePost($postId, $wpPost);
 

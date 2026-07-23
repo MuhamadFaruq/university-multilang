@@ -218,28 +218,43 @@ class SettingsMenu implements MenuInterface
                     resultSpan.style.color = '#666';
                     resultSpan.textContent = 'Testing connection...';
 
-                    var formData = new FormData();
+                    var formData = new URLSearchParams();
                     formData.append('action', 'uml_test_translation_connection');
+                    formData.append('nonce', document.getElementById('uml_settings_nonce') ? document.getElementById('uml_settings_nonce').value : '');
                     formData.append('provider', providerSelect ? providerSelect.value : '');
                     formData.append('api_key', document.getElementById('uml_deepl_api_key') ? document.getElementById('uml_deepl_api_key').value : '');
 
-                    fetch(ajaxurl, {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(function(res) { return res.json(); })
-                    .then(function(data) {
-                        if (data.success) {
-                            resultSpan.style.color = 'green';
-                            resultSpan.textContent = '✔ ' + (data.data.message || 'Connection successful!');
-                        } else {
+                    jQuery.ajax({
+                        url: (typeof ajaxurl !== 'undefined' && ajaxurl) ? ajaxurl : '/wp-admin/admin-ajax.php',
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {
+                            action: 'uml_test_translation_connection',
+                            nonce: document.getElementById('uml_settings_nonce') ? document.getElementById('uml_settings_nonce').value : '',
+                            provider: providerSelect ? providerSelect.value : '',
+                            api_key: document.getElementById('uml_deepl_api_key') ? document.getElementById('uml_deepl_api_key').value : ''
+                        },
+                        success: function(data) {
+                            if (data.success) {
+                                resultSpan.style.color = 'green';
+                                resultSpan.textContent = '✔ ' + (data.data.message || 'Connection successful!');
+                            } else {
+                                resultSpan.style.color = 'red';
+                                resultSpan.textContent = '✖ ' + (data.data.message || 'Connection failed.');
+                            }
+                        },
+                        error: function(xhr, status, error) {
                             resultSpan.style.color = 'red';
-                            resultSpan.textContent = '✖ ' + (data.data.message || 'Connection failed.');
+                            var errMsg = '✖ Error: ' + status + ' (' + error + ')';
+                            if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
+                                errMsg = '✖ ' + xhr.responseJSON.data.message;
+                            } else if (xhr.responseText) {
+                                console.error("AJAX Error Response:", xhr.responseText);
+                                // Just show a snippet of response if it's not JSON
+                                errMsg += ' - Check Console for details.';
+                            }
+                            resultSpan.textContent = errMsg;
                         }
-                    })
-                    .catch(function(err) {
-                        resultSpan.style.color = 'red';
-                        resultSpan.textContent = '✖ Error connecting to server.';
                     });
                 });
             }

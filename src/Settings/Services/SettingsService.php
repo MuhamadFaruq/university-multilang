@@ -101,8 +101,8 @@ class SettingsService
 
     public function getTranslationProvider(): string
     {
-        $value = $this->repository->get('translation_provider', 'null');
-        return is_string($value) ? $value : 'null';
+        $value = $this->repository->get('translation_provider', 'google');
+        return is_string($value) ? $value : 'google';
     }
 
     public function setTranslationProvider(string $provider): bool

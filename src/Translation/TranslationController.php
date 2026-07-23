@@ -6,22 +6,22 @@ namespace UniversityMultilang\Translation;
 
 use UniversityMultilang\Language\Services\LanguageService;
 use UniversityMultilang\Translation\Services\TranslationService;
-use UniversityMultilang\Translation\Services\AutoDuplicateService;
+use UniversityMultilang\Translation\Services\TranslationQueueService;
 
 class TranslationController
 {
     private TranslationService $translationService;
     private LanguageService $languageService;
-    private AutoDuplicateService $autoDuplicateService;
+    private TranslationQueueService $translationQueueService;
 
     public function __construct(
         TranslationService $translationService,
         LanguageService $languageService,
-        AutoDuplicateService $autoDuplicateService
+        TranslationQueueService $translationQueueService
     ) {
         $this->translationService = $translationService;
         $this->languageService = $languageService;
-        $this->autoDuplicateService = $autoDuplicateService;
+        $this->translationQueueService = $translationQueueService;
     }
 
     /**
@@ -68,10 +68,34 @@ class TranslationController
             return;
         }
 
+        // We only auto-duplicate published posts
+        if ($post->post_status !== 'publish') {
+            return;
+        }
+
+        // We only auto-duplicate standard posts and pages for now
+        if (!in_array($post->post_type, ['post', 'page'], true)) {
+            return;
+        }
+
         self::$isAutoDuplicating = true;
 
         try {
-            $this->autoDuplicateService->duplicatePost($postId, $post);
+            $sourceLang = $this->languageService->getLanguageSlugForObject($postId, 'post');
+            
+            // Fallback: If post has no language (e.g., saved by Elementor without nonce), assign default language
+            if (!$sourceLang) {
+                $allLangs = $this->languageService->getAllLanguages();
+                if (!empty($allLangs)) {
+                    $sourceLang = $allLangs[0]->getSlug();
+                    $this->languageService->setLanguageForObject($postId, 'post', $sourceLang);
+                }
+            }
+
+            // Dispatch background job for translation
+            if ($sourceLang) {
+                $this->translationQueueService->dispatchTranslationJob($postId);
+            }
         } catch (\Exception $e) {
             // Ignore duplication error
         }

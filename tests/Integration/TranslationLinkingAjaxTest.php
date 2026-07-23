@@ -35,6 +35,7 @@ class TranslationLinkingAjaxTest extends IntegrationTestCase
             $this->getService(\UniversityMultilang\Translation\Factories\TranslationProviderFactory::class),
             new WpPostRepository()
         );
+        $queueService = new \UniversityMultilang\Translation\Services\TranslationQueueService($autoDup);
 
         if (!taxonomy_exists(WpTermLanguageRepository::TAXONOMY)) {
             $provider = new \UniversityMultilang\Language\LanguageServiceProvider(
@@ -54,7 +55,7 @@ class TranslationLinkingAjaxTest extends IntegrationTestCase
         $this->controller = new TranslationController(
             $this->translationService,
             $this->languageService,
-            $autoDup
+            $queueService
         );
     }
 

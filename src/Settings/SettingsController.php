@@ -63,6 +63,11 @@ class SettingsController
             wp_send_json_error(['message' => 'Unauthorized user']);
         }
 
+        $nonce = $_POST['nonce'] ?? '';
+        if (!wp_verify_nonce((string) $nonce, 'uml_save_settings_nonce')) {
+            wp_send_json_error(['message' => 'Invalid or expired security token. Please refresh the page.']);
+        }
+
         $provider = sanitize_text_field($_POST['provider'] ?? $this->settingsService->getTranslationProvider());
         $apiKey = sanitize_text_field($_POST['api_key'] ?? $this->settingsService->getDeepLApiKey());
 

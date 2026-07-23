@@ -56,6 +56,9 @@ class RouterIntegrationTest extends IntegrationTestCase
     public function testFilterPostLinkReturnsOriginalWhenNoLanguage(): void
     {
         $postId = $this->createPost(['post_title' => 'No Language Post']);
+        
+        // Remove any auto-assigned language term from publish save
+        wp_delete_object_term_relationships($postId, \UniversityMultilang\Language\Repositories\WpTermLanguageRepository::TAXONOMY);
 
         $originalPermalink = 'http://example.org/no-language-post/';
         $filteredPermalink = $this->urlManager->filterPostLink($originalPermalink, $postId);

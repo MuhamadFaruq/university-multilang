@@ -97,7 +97,7 @@ class TranslationServiceProvider extends ServiceProvider
             return new TranslationController(
                 $container->get(TranslationService::class),
                 $container->get(LanguageService::class),
-                $container->get(\UniversityMultilang\Translation\Services\AutoDuplicateService::class)
+                $container->get(\UniversityMultilang\Translation\Services\TranslationQueueService::class)
             );
         });
 
@@ -128,5 +128,48 @@ class TranslationServiceProvider extends ServiceProvider
         $this->hooks->addAction('save_post', $this->container->get(TranslationController::class), 'autoDuplicateTranslations', 20, 3);
         $this->hooks->addAction('before_delete_post', $this->container->get(TranslationController::class), 'handlePostDeletion');
         $this->hooks->addAction('wp_ajax_uml_link_existing_post', $this->container->get(TranslationController::class), 'handleLinkExistingPost');
+
+        // Bind OptionsTranslationService
+        $this->container->bind(\UniversityMultilang\Translation\Services\OptionsTranslationService::class, function ($container) {
+            return new \UniversityMultilang\Translation\Services\OptionsTranslationService(
+                $container->get(\UniversityMultilang\Router\RequestProcessor::class),
+                $container->get(\UniversityMultilang\Translation\Contracts\ContentTranslatorInterface::class),
+                $container->get(LanguageService::class)
+            );
+        });
+
+        // Bind StringTranslationService
+        $this->container->bind(\UniversityMultilang\Translation\Services\StringTranslationService::class, function ($container) {
+            return new \UniversityMultilang\Translation\Services\StringTranslationService(
+                $container->get(\UniversityMultilang\Router\RequestProcessor::class),
+                $container->get(LanguageService::class)
+            );
+        });
+
+        // Bind StringTranslationQueueService
+        $this->container->bind(\UniversityMultilang\Translation\Services\StringTranslationQueueService::class, function ($container) {
+            return new \UniversityMultilang\Translation\Services\StringTranslationQueueService(
+                $container->get(\UniversityMultilang\Translation\Contracts\ContentTranslatorInterface::class),
+                $container->get(LanguageService::class)
+            );
+        });
+    }
+
+    public function boot(): void
+    {
+        // Register hooks for Options Translation
+        /** @var \UniversityMultilang\Translation\Services\OptionsTranslationService $optionsTranslator */
+        $optionsTranslator = $this->container->get(\UniversityMultilang\Translation\Services\OptionsTranslationService::class);
+        $optionsTranslator->registerHooks();
+
+        // Register hooks for String Translation
+        /** @var \UniversityMultilang\Translation\Services\StringTranslationService $stringTranslator */
+        $stringTranslator = $this->container->get(\UniversityMultilang\Translation\Services\StringTranslationService::class);
+        $stringTranslator->registerHooks();
+
+        // Register hooks for String Translation Queue
+        /** @var \UniversityMultilang\Translation\Services\StringTranslationQueueService $stringQueue */
+        $stringQueue = $this->container->get(\UniversityMultilang\Translation\Services\StringTranslationQueueService::class);
+        $stringQueue->registerHooks();
     }
 }

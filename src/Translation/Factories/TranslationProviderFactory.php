@@ -8,6 +8,7 @@ use UniversityMultilang\Translation\Contracts\ContentTranslatorInterface;
 use UniversityMultilang\Translation\Providers\NullTranslator;
 use UniversityMultilang\Translation\Providers\GoogleTranslateProvider;
 use UniversityMultilang\Translation\Providers\DeepLTranslateProvider;
+use UniversityMultilang\Translation\Services\FallbackTranslator;
 use UniversityMultilang\Settings\Services\SettingsService;
 
 class TranslationProviderFactory
@@ -26,7 +27,8 @@ class TranslationProviderFactory
         switch ($providerType) {
             case 'deepl':
                 $apiKey = $this->settingsService->getDeepLApiKey();
-                return new DeepLTranslateProvider($apiKey);
+                $primary = new DeepLTranslateProvider($apiKey);
+                return new FallbackTranslator($primary);
             case 'google':
                 return new GoogleTranslateProvider();
             case 'null':

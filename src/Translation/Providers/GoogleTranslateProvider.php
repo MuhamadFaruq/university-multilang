@@ -22,9 +22,21 @@ class GoogleTranslateProvider implements ContentTranslatorInterface
             'q'      => $text,
         ]);
 
-        $response = wp_remote_get($url, [
+        $args = [
             'timeout' => 15,
-        ]);
+            'headers' => [
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+                'Accept' => 'application/json'
+            ]
+        ];
+
+        $response = wp_remote_get($url, $args);
+
+        // Fallback for SSL verification failures (common on local/shared hosting)
+        if (is_wp_error($response)) {
+            $args['sslverify'] = false;
+            $response = wp_remote_get($url, $args);
+        }
 
         if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
             return $text;

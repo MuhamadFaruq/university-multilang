@@ -36,10 +36,24 @@ class QueryFilter
             return;
         }
 
-        // Also skip menu queries and media queries
+        // Also skip menu queries, media queries, block theme post types, and builder templates
         $postType = $query->get('post_type');
-        if ($postType === 'nav_menu_item' || $postType === 'attachment') {
-            return;
+        $excludedPostTypes = [
+            'nav_menu_item', 'attachment', 'wp_navigation', 'wp_template', 'wp_template_part', 
+            'wp_global_styles', 'wp_block', 'elementor_library', 'kadence_element', 
+            'et_pb_layout', 'fl-builder-template'
+        ];
+        
+        if (is_array($postType)) {
+            foreach ($excludedPostTypes as $excluded) {
+                if (in_array($excluded, $postType, true)) {
+                    return;
+                }
+            }
+        } else {
+            if (in_array($postType, $excludedPostTypes, true)) {
+                return;
+            }
         }
 
         // error_log('QueryFilter running!');

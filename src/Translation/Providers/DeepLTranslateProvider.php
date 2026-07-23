@@ -21,24 +21,41 @@ class DeepLTranslateProvider implements ContentTranslatorInterface
             return $text;
         }
 
-        $endpoint = str_ends_with($this->apiKey, ':fx')
+        $url = (substr($this->apiKey, -3) === ':fx')
             ? 'https://api-free.deepl.com/v2/translate'
             : 'https://api.deepl.com/v2/translate';
 
-        $response = wp_remote_post($endpoint, [
+        $args = [
             'timeout' => 15,
             'headers' => [
                 'Authorization' => 'DeepL-Auth-Key ' . $this->apiKey,
                 'Content-Type'  => 'application/json',
+                'User-Agent'    => 'UniversityMultilang/1.0',
             ],
-            'body' => json_encode([
+            'body' => wp_json_encode([
                 'text'        => [$text],
-                'target_lang' => strtoupper($targetLanguageSlug),
                 'source_lang' => strtoupper($sourceLanguageSlug),
+                'target_lang' => strtoupper($targetLanguageSlug),
             ]),
-        ]);
+        ];
 
-        if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+        $response = wp_remote_post($url, $args);
+
+        // Fallback for SSL verification failures (common on local/shared hosting)
+        if (is_wp_error($response)) {
+            $args['sslverify'] = false;
+            $response = wp_remote_post($url, $args);
+        }
+
+        if (is_wp_error($response)) {
+            error_log('[UML DeepL] API request failed: ' . $response->get_error_message());
+            return $text;
+        }
+
+        $httpCode = wp_remote_retrieve_response_code($response);
+        if ($httpCode !== 200) {
+            $body = wp_remote_retrieve_body($response);
+            error_log("[UML DeepL] API returned HTTP {$httpCode}: {$body}");
             return $text;
         }
 

@@ -50,6 +50,8 @@ class TranslationProvidersTest extends TestCase
         $factory = new TranslationProviderFactory($settings);
 
         $provider = $factory->create();
-        $this->assertInstanceOf(DeepLTranslateProvider::class, $provider);
+        // DeepL is now wrapped in FallbackTranslator for resilience
+        $this->assertInstanceOf(\UniversityMultilang\Translation\Services\FallbackTranslator::class, $provider);
+        $this->assertInstanceOf(\UniversityMultilang\Translation\Contracts\ContentTranslatorInterface::class, $provider);
     }
 }

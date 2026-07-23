@@ -23,12 +23,12 @@ class RoutingGuardService
         $query = strtolower($parsed['query'] ?? '');
 
         // 1. REST API Guard
-        if (str_starts_with($path, '/wp-json')) {
+        if (strpos($path, '/wp-json') === 0) {
             return true;
         }
 
         // 2. Admin & System endpoints Guard
-        if (str_starts_with($path, '/wp-admin') || str_contains($path, 'wp-login.php') || str_contains($path, 'wp-cron.php')) {
+        if (strpos($path, '/wp-admin') === 0 || strpos($path, 'wp-login.php') !== false || strpos($path, 'wp-cron.php') !== false) {
             return true;
         }
 
