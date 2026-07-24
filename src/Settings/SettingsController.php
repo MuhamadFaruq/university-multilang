@@ -59,12 +59,21 @@ class SettingsController
 
     public function handleTestTranslationConnection(): void
     {
+        // Clean any stale output from other plugins (e.g. W3 Total Cache error notices)
+        // that would corrupt our JSON response
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        ob_start();
+
         if (!current_user_can('manage_options')) {
+            ob_end_clean();
             wp_send_json_error(['message' => 'Unauthorized user']);
         }
 
         $nonce = $_POST['nonce'] ?? '';
         if (!wp_verify_nonce((string) $nonce, 'uml_save_settings_nonce')) {
+            ob_end_clean();
             wp_send_json_error(['message' => 'Invalid or expired security token. Please refresh the page.']);
         }
 
@@ -72,29 +81,47 @@ class SettingsController
         $apiKey = sanitize_text_field($_POST['api_key'] ?? $this->settingsService->getDeepLApiKey());
 
         if ($provider === 'null') {
-            wp_send_json_success(['message' => 'Offline / Disabled provider active. No connection test required.']);
+            $this->sendCleanJson(true, 'Offline / Disabled provider active. No connection test required.');
         } elseif ($provider === 'google') {
             $testProvider = new \UniversityMultilang\Translation\Providers\GoogleTranslateProvider();
             $result = $testProvider->translate('Hello', 'en', 'id');
             if (!empty($result) && strtolower($result) !== 'hello') {
-                wp_send_json_success(['message' => 'Google Translate connection OK! Test translation: "Hello" -> "' . $result . '"']);
+                $this->sendCleanJson(true, 'Google Translate connection OK! Test translation: "Hello" -> "' . $result . '"');
             } else {
-                wp_send_json_error(['message' => 'Google Translate request failed or rate-limited.']);
+                $this->sendCleanJson(false, 'Google Translate request failed or rate-limited.');
             }
         } elseif ($provider === 'deepl') {
             if (empty($apiKey)) {
-                wp_send_json_error(['message' => 'DeepL API Key is required.']);
+                $this->sendCleanJson(false, 'DeepL API Key is required.');
             } else {
                 $testProvider = new \UniversityMultilang\Translation\Providers\DeepLTranslateProvider($apiKey);
                 $result = $testProvider->translate('Hello', 'en', 'id');
                 if (!empty($result) && strtolower($result) !== 'hello') {
-                    wp_send_json_success(['message' => 'DeepL API Connection OK! Test translation: "Hello" -> "' . $result . '"']);
+                    $this->sendCleanJson(true, 'DeepL API Connection OK! Test translation: "Hello" -> "' . $result . '"');
                 } else {
-                    wp_send_json_error(['message' => 'DeepL API request failed. Please check your API key.']);
+                    $this->sendCleanJson(false, 'DeepL API request failed. Please check your API key.');
                 }
             }
         } else {
-            wp_send_json_error(['message' => 'Unknown provider']);
+            $this->sendCleanJson(false, 'Unknown provider');
+        }
+    }
+
+    /**
+     * Send a clean JSON response, flushing any output buffer garbage
+     * from other plugins (e.g. W3 Total Cache error notices).
+     */
+    private function sendCleanJson(bool $success, string $message): void
+    {
+        // Discard ALL buffered output (W3TC errors, notices, etc.)
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        if ($success) {
+            wp_send_json_success(['message' => $message]);
+        } else {
+            wp_send_json_error(['message' => $message]);
         }
     }
 }
