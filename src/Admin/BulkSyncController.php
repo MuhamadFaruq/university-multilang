@@ -22,7 +22,11 @@ class BulkSyncController
 
     public function handleInitAjax(): void
     {
-        check_ajax_referer('uml_bulk_sync_nonce', 'nonce');
+        $this->cleanOutputBuffer();
+
+        if (!check_ajax_referer('uml_bulk_sync_nonce', 'nonce', false)) {
+            wp_send_json_error('Invalid security token');
+        }
 
         if (!current_user_can('manage_options')) {
             wp_send_json_error('Unauthorized');
@@ -45,7 +49,11 @@ class BulkSyncController
 
     public function handleProcessAjax(): void
     {
-        check_ajax_referer('uml_bulk_sync_nonce', 'nonce');
+        $this->cleanOutputBuffer();
+
+        if (!check_ajax_referer('uml_bulk_sync_nonce', 'nonce', false)) {
+            wp_send_json_error('Invalid security token');
+        }
 
         if (!current_user_can('manage_options')) {
             wp_send_json_error('Unauthorized');
@@ -86,5 +94,17 @@ class BulkSyncController
         }
 
         wp_send_json_success(['processed' => $processed]);
+    }
+
+    /**
+     * Clean any stale output from other plugins (e.g. W3 Total Cache error notices)
+     * that would corrupt our JSON response.
+     */
+    private function cleanOutputBuffer(): void
+    {
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        ob_start();
     }
 }

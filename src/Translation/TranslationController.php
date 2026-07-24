@@ -138,6 +138,8 @@ class TranslationController
      */
     public function handleLinkExistingPost(): void
     {
+        $this->cleanOutputBuffer();
+
         $nonce = $_POST['nonce'] ?? '';
         if (!wp_verify_nonce((string) $nonce, 'uml_link_existing_post_nonce')) {
             wp_send_json_error(['message' => 'Invalid nonce'], 403);
@@ -162,5 +164,17 @@ class TranslationController
         } catch (\Exception $e) {
             wp_send_json_error(['message' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Clean any stale output from other plugins (e.g. W3 Total Cache error notices)
+     * that would corrupt our JSON response.
+     */
+    private function cleanOutputBuffer(): void
+    {
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        ob_start();
     }
 }
