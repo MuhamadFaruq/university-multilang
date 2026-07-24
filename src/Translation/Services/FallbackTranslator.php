@@ -29,7 +29,6 @@ class FallbackTranslator implements ContentTranslatorInterface
 
         // If primary returned the same text, it likely failed — try fallback
         if ($result === $text && $sourceLanguageSlug !== $targetLanguageSlug && !empty(trim($text))) {
-            error_log("[UML Fallback] Primary translator returned original text, falling back to Google Translate");
             $result = $this->fallback->translate($text, $sourceLanguageSlug, $targetLanguageSlug);
         }
 

@@ -56,8 +56,11 @@ class QueryFilter
             }
         }
 
-        // error_log('QueryFilter running!');
-
+        // Avoid infinite loops
+        if ($query->get('lang_filter_applied')) {
+            return;
+        }
+        
         $currentLang = $this->requestProcessor->getCurrentLanguage();
 
         // If there's no language prefix in the URL, use the default language

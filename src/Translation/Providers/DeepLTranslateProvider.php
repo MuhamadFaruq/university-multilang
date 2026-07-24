@@ -48,14 +48,11 @@ class DeepLTranslateProvider implements ContentTranslatorInterface
         }
 
         if (is_wp_error($response)) {
-            error_log('[UML DeepL] API request failed: ' . $response->get_error_message());
             return $text;
         }
 
         $httpCode = wp_remote_retrieve_response_code($response);
         if ($httpCode !== 200) {
-            $body = wp_remote_retrieve_body($response);
-            error_log("[UML DeepL] API returned HTTP {$httpCode}: {$body}");
             return $text;
         }
 

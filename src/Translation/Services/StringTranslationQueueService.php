@@ -56,7 +56,7 @@ class StringTranslationQueueService
                         $dictionary[$key] = $translated;
                     }
                 } catch (\Exception $e) {
-                    error_log("StringTranslationQueueService Error: " . $e->getMessage());
+                    // Fail silently to continue processing the queue
                 }
                 
                 unset($updatedQueue[$key]);
