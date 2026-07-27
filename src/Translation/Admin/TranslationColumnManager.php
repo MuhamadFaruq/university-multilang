@@ -29,7 +29,7 @@ class TranslationColumnManager
 
         // Language filter dropdown
         add_action('restrict_manage_posts', [$this, 'renderLanguageFilterDropdown']);
-        add_action('parse_query', [$this, 'filterPostsByLanguage']);
+        add_action('pre_get_posts', [$this, 'filterPostsByLanguage']);
     }
 
     public function addLanguageColumns(array $columns): array
@@ -103,10 +103,16 @@ class TranslationColumnManager
             return;
         }
 
+        if ($query->get('uml_admin_filter_applied')) {
+            return;
+        }
+
         $filterLang = isset($_GET['uml_filter_lang']) ? sanitize_title($_GET['uml_filter_lang']) : '';
         if (empty($filterLang)) {
             return;
         }
+
+        $query->set('uml_admin_filter_applied', true);
 
         $taxQuery = $query->get('tax_query') ?: [];
         if (!is_array($taxQuery)) {
