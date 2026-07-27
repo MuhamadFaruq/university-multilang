@@ -26,6 +26,10 @@ class TranslationColumnManager
 
         add_action('manage_posts_custom_column', [$this, 'renderCustomColumn'], 10, 2);
         add_action('manage_pages_custom_column', [$this, 'renderCustomColumn'], 10, 2);
+
+        // Language filter dropdown
+        add_action('restrict_manage_posts', [$this, 'renderLanguageFilterDropdown']);
+        add_action('parse_query', [$this, 'filterPostsByLanguage']);
     }
 
     public function addLanguageColumns(array $columns): array
@@ -69,5 +73,52 @@ class TranslationColumnManager
             $addUrl = admin_url("post-new.php?from_post={$postId}&new_lang={$targetLangSlug}");
             echo '<a href="' . esc_url($addUrl) . '" title="' . esc_attr("Add {$targetLangSlug} translation") . '" style="text-decoration:none; font-weight:bold; color:#28a745; font-size:16px;">+</a>';
         }
+    }
+
+    public function renderLanguageFilterDropdown(string $postType): void
+    {
+        if (!in_array($postType, ['post', 'page'], true)) {
+            return;
+        }
+
+        $languages = $this->languageService->getAllLanguages();
+        if (empty($languages)) {
+            return;
+        }
+
+        $currentLang = isset($_GET['uml_filter_lang']) ? sanitize_title($_GET['uml_filter_lang']) : '';
+
+        echo '<select name="uml_filter_lang" id="uml_filter_lang">';
+        echo '<option value="">All Languages</option>';
+        foreach ($languages as $lang) {
+            $selected = ($currentLang === $lang->getSlug()) ? ' selected="selected"' : '';
+            echo '<option value="' . esc_attr($lang->getSlug()) . '"' . $selected . '>' . esc_html($lang->getName()) . ' (' . esc_html(strtoupper($lang->getSlug())) . ')</option>';
+        }
+        echo '</select>';
+    }
+
+    public function filterPostsByLanguage(\WP_Query $query): void
+    {
+        if (!is_admin() || !$query->is_main_query()) {
+            return;
+        }
+
+        $filterLang = isset($_GET['uml_filter_lang']) ? sanitize_title($_GET['uml_filter_lang']) : '';
+        if (empty($filterLang)) {
+            return;
+        }
+
+        $taxQuery = $query->get('tax_query') ?: [];
+        if (!is_array($taxQuery)) {
+            $taxQuery = [];
+        }
+
+        $taxQuery[] = [
+            'taxonomy' => \UniversityMultilang\Language\Repositories\WpTermLanguageRepository::TAXONOMY,
+            'field'    => 'slug',
+            'terms'    => $filterLang,
+        ];
+
+        $query->set('tax_query', $taxQuery);
     }
 }
