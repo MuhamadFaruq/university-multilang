@@ -48,6 +48,9 @@ class LanguageController
 
         try {
             $this->languageService->addLanguage($name, $slug, $locale);
+            if (function_exists('flush_rewrite_rules')) {
+                flush_rewrite_rules();
+            }
             $redirectUrl = add_query_arg(['page' => 'university-multilang-languages', 'success' => '1'], admin_url('admin.php'));
         } catch (\Exception $e) {
             $redirectUrl = add_query_arg(['page' => 'university-multilang-languages', 'error' => 'insert_failed'], admin_url('admin.php'));
@@ -65,6 +68,9 @@ class LanguageController
 
         $termId = (int) $_GET['term_id'];
         $this->languageService->removeLanguage($termId);
+        if (function_exists('flush_rewrite_rules')) {
+            flush_rewrite_rules();
+        }
 
         $redirectUrl = add_query_arg(['page' => 'university-multilang-languages', 'success_delete' => '1'], admin_url('admin.php'));
         wp_safe_redirect($redirectUrl);

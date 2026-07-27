@@ -50,6 +50,10 @@ class SettingsController
         $this->settingsService->setCanonicalEnabled(!empty($_POST['uml_canonical_enabled']));
         $this->settingsService->setAutoDuplicateDraftsEnabled(!empty($_POST['uml_auto_duplicate_drafts']));
 
+        if (function_exists('flush_rewrite_rules')) {
+            flush_rewrite_rules();
+        }
+
         $redirectUrl = admin_url('admin.php?page=uml-settings&settings-updated=1');
         if (!headers_sent()) {
             wp_safe_redirect($redirectUrl);

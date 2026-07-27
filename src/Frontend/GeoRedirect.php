@@ -45,7 +45,10 @@ class GeoRedirect
                 $parsedUrl = parse_url(home_url('/'));
                 if ($parsedUrl && isset($parsedUrl['host'])) {
                     $scheme = isset($parsedUrl['scheme']) ? $parsedUrl['scheme'] . '://' : '';
-                    $langUrl = $scheme . $parsedUrl['host'] . '/' . $lang->getSlug() . '/';
+                    $host = $parsedUrl['host'];
+                    $port = isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '';
+                    $path = rtrim($parsedUrl['path'] ?? '', '/');
+                    $langUrl = $scheme . $host . $port . $path . '/' . $lang->getSlug() . '/';
 
                     $mapping[$countryCode] = [
                         'slug' => $lang->getSlug(),

@@ -13,6 +13,15 @@ class RequestContext
     {
         $this->rawUri = $rawUri;
         $path = parse_url($rawUri, PHP_URL_PATH) ?: '';
+
+        if (function_exists('home_url') || function_exists(__NAMESPACE__ . '\\home_url')) {
+            $homePath = parse_url(home_url('/'), PHP_URL_PATH);
+            $basePath = rtrim((string) $homePath, '/');
+            if (!empty($basePath) && strpos($path, $basePath) === 0) {
+                $path = substr($path, strlen($basePath));
+            }
+        }
+
         $this->path = ltrim($path, '/');
     }
 

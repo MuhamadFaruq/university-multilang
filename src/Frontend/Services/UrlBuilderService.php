@@ -55,7 +55,10 @@ class UrlBuilderService
         $parsedUrl = parse_url($homeUrl);
         if ($parsedUrl && isset($parsedUrl['host'])) {
             $scheme = isset($parsedUrl['scheme']) ? $parsedUrl['scheme'] . '://' : '';
-            return $scheme . $parsedUrl['host'] . '/' . $languageSlug . '/';
+            $host = $parsedUrl['host'];
+            $port = isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '';
+            $path = rtrim($parsedUrl['path'] ?? '', '/');
+            return $scheme . $host . $port . $path . '/' . $languageSlug . '/';
         }
 
         return $homeUrl;

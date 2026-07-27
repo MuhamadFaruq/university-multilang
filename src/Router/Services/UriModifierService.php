@@ -21,16 +21,26 @@ class UriModifierService
             return $rawUri;
         }
 
-        $prefix = '/' . $languageSlug;
-        if (strpos($rawUri, $prefix) === 0) {
-            $newUri = substr($rawUri, strlen($prefix));
+        $basePath = '';
+        if (function_exists('home_url') || function_exists(__NAMESPACE__ . '\\home_url')) {
+            $homePath = parse_url(home_url('/'), PHP_URL_PATH);
+            $basePath = rtrim((string) $homePath, '/');
+        }
 
-            // Ensure it doesn't become empty (e.g. /en -> /)
-            if (empty($newUri) || $newUri === '?') {
-                $newUri = '/' . $newUri;
+        $targetPrefix = $basePath . '/' . $languageSlug;
+        if (strpos($rawUri, $targetPrefix) === 0) {
+            $nextChar = $rawUri[strlen($targetPrefix)] ?? '';
+            if ($nextChar === '' || $nextChar === '/' || $nextChar === '?' || $nextChar === '#') {
+                $remainder = substr($rawUri, strlen($targetPrefix));
+
+                if (empty($remainder) || ($remainder[0] !== '/' && $remainder[0] !== '?')) {
+                    $remainder = '/' . $remainder;
+                } elseif ($remainder[0] === '?' && !empty($basePath)) {
+                    $remainder = '/' . $remainder;
+                }
+
+                return $basePath . $remainder;
             }
-
-            return $newUri;
         }
 
         return $rawUri;
