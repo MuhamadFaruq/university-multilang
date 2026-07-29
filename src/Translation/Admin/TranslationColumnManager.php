@@ -24,6 +24,8 @@ class TranslationColumnManager
         add_filter('manage_posts_columns', [$this, 'addLanguageColumns']);
         add_filter('manage_pages_columns', [$this, 'addLanguageColumns']);
 
+        add_action('bulk_edit_custom_box', [$this, 'renderBulkEditBox'], 10, 2);
+
         add_action('manage_posts_custom_column', [$this, 'renderCustomColumn'], 10, 2);
         add_action('manage_pages_custom_column', [$this, 'renderCustomColumn'], 10, 2);
 
@@ -126,5 +128,39 @@ class TranslationColumnManager
         ];
 
         $query->set('tax_query', $taxQuery);
+    }
+
+    private bool $bulkEditRendered = false;
+
+    public function renderBulkEditBox(string $columnName, string $postType): void
+    {
+        if ($this->bulkEditRendered) {
+            return;
+        }
+
+        if (strpos($columnName, 'uml_lang_') !== 0) {
+            return;
+        }
+
+        $languages = $this->languageService->getAllLanguages();
+        if (empty($languages)) {
+            return;
+        }
+
+        $this->bulkEditRendered = true;
+
+        echo '<fieldset class="inline-edit-col-right inline-edit-uml-language">';
+        echo '<div class="inline-edit-col">';
+        echo '<label class="inline-edit-group">';
+        echo '<span class="title">Language</span>';
+        echo '<select name="uml_bulk_language">';
+        echo '<option value="">— No Change —</option>';
+        foreach ($languages as $lang) {
+            echo '<option value="' . esc_attr($lang->getSlug()) . '">' . esc_html($lang->getName()) . '</option>';
+        }
+        echo '</select>';
+        echo '</label>';
+        echo '</div>';
+        echo '</fieldset>';
     }
 }

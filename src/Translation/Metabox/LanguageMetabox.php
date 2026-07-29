@@ -97,7 +97,9 @@ class LanguageMetabox
             } else {
                 // Determine post type and create 'add new' link
                 $newPostLink = admin_url('post-new.php?post_type=' . $post->post_type . '&from_post=' . $post->ID . '&new_lang=' . $lang->getSlug());
-                echo '<li>' . esc_html($lang->getName()) . ': <a href="' . esc_url($newPostLink) . '" style="color: green;">+ Add</a></li>';
+                echo '<li style="margin-bottom:6px;">' . esc_html($lang->getName()) . ': <a href="' . esc_url($newPostLink) . '" style="color: green;">+ Add New</a>';
+                echo '<div style="margin-top: 4px; font-size: 11px;">Or Link ID: <input type="number" name="uml_link_existing[' . esc_attr($lang->getSlug()) . ']" style="width:60px; height: 22px; padding: 0 4px;" placeholder="ID"></div>';
+                echo '</li>';
             }
         }
         echo '</ul>';
@@ -105,6 +107,24 @@ class LanguageMetabox
 
     public function savePostData(int $postId): void
     {
+        // Handle Bulk Edit saving
+        if (isset($_REQUEST['bulk_edit']) && !empty($_REQUEST['uml_bulk_language'])) {
+            // WordPress validates the bulk edit nonce internally
+            if (isset($_REQUEST['post_type']) && 'page' === $_REQUEST['post_type']) {
+                if (!current_user_can('edit_page', $postId)) return;
+            } else {
+                if (!current_user_can('edit_post', $postId)) return;
+            }
+
+            $languageSlug = sanitize_title($_REQUEST['uml_bulk_language']);
+            try {
+                $this->languageService->setLanguageForObject($postId, 'post', $languageSlug);
+            } catch (\Exception $e) {
+                // Ignore error
+            }
+            return;
+        }
+
         // Check if nonce is set
         if (!isset($_POST['uml_language_metabox_nonce'])) {
             return;
@@ -139,6 +159,23 @@ class LanguageMetabox
                     $this->languageService->setLanguageForObject($postId, 'post', $languageSlug);
                 } catch (\Exception $e) {
                     // Ignore or log error
+                }
+            }
+        }
+
+        // Handle Linking Existing Posts
+        if (isset($_POST['uml_link_existing']) && is_array($_POST['uml_link_existing'])) {
+            foreach ($_POST['uml_link_existing'] as $targetLang => $targetPostId) {
+                $targetPostId = (int) $targetPostId;
+                if ($targetPostId > 0) {
+                    try {
+                        // Make sure target post has the target language
+                        $this->languageService->setLanguageForObject($targetPostId, 'post', sanitize_title($targetLang));
+                        // Link them
+                        $this->translationService->linkTranslations($postId, $targetPostId, sanitize_title($targetLang), 'post');
+                    } catch (\Exception $e) {
+                        // Ignore linking errors
+                    }
                 }
             }
         }
