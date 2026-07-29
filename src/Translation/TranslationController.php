@@ -82,7 +82,7 @@ class TranslationController
 
         try {
             $sourceLang = $this->languageService->getLanguageSlugForObject($postId, 'post');
-            
+
             // Fallback: If post has no language (e.g., saved by Elementor without nonce), assign default language
             if (!$sourceLang) {
                 $allLangs = $this->languageService->getAllLanguages();
