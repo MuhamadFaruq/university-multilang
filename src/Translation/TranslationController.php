@@ -63,6 +63,14 @@ class TranslationController
             return;
         }
 
+        // Limit auto-duplication during bulk edits to max 5 items to prevent server crash
+        if (isset($_REQUEST['bulk_edit'])) {
+            $postIds = $_REQUEST['post'] ?? [];
+            if (is_array($postIds) && count($postIds) > 5) {
+                return;
+            }
+        }
+
         // Prevent infinite loops if we are programmatically inserting a post
         if (self::$isAutoDuplicating) {
             return;
