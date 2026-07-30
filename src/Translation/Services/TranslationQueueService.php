@@ -16,10 +16,11 @@ class TranslationQueueService
     public function dispatchTranslationJob(int $postId): void
     {
         if (function_exists('wp_schedule_single_event')) {
-            // Schedule via WP Cron to process asynchronously in background
-            wp_schedule_single_event(time(), 'uml_process_translation_queue_event', [$postId]);
+            // Space out background translation jobs by 20 seconds to prevent WP-Cron memory exhaustion
+            $offset = (int) get_transient('uml_translation_cron_offset');
+            wp_schedule_single_event(time() + $offset, 'uml_process_translation_queue_event', [$postId]);
+            set_transient('uml_translation_cron_offset', $offset + 20, 60);
         } else {
-            // Synchronous fallback
             $this->processPostTranslation($postId);
         }
     }

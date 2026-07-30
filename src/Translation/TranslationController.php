@@ -46,8 +46,17 @@ class TranslationController
         // Set the language for the new post
         $this->languageService->setLanguageForObject($postId, 'post', $newLang);
 
-        // Link the translation
-        $this->translationService->linkTranslations($fromPostId, $postId, $newLang, 'post');
+        // Link the translation (wrapped in try-catch to be idempotent if wp_insert_post fires twice)
+        try {
+            $group = $this->translationService->getTranslations($fromPostId, 'post');
+            if (isset($group[$newLang]) && $group[$newLang] === $postId) {
+                // Already linked in a previous hook execution
+                return;
+            }
+            $this->translationService->linkTranslations($fromPostId, $postId, $newLang, 'post');
+        } catch (\Exception $e) {
+            // Ignore if already linked or fails
+        }
     }
 
     private static bool $isAutoDuplicating = false;
